@@ -1,0 +1,6 @@
+[submodule "tracy"]
+	path = tracy
+	url = https://github.com/wolfpld/tracy
+[submodule "assimp"]
+	path = assimp
+	url = https://github.com/assimp/assimp

@@ -1,0 +1,18 @@
+#ifndef VEGA_CORE_DEBUG_TRACY_H
+#define VEGA_CORE_DEBUG_TRACY_H
+
+#include <tracy/TracyC.h>
+
+#ifndef TRACY_COLOR_RED
+	#define TRACY_COLOR_RED (0x00FF0000)
+#endif // TRACY_COLOR_RED
+
+#ifndef TRACY_COLOR_GREEN
+	#define TRACY_COLOR_GREEN (0x0000FF00)
+#endif // TRACY_COLOR_GREEN
+
+#ifndef TRACY_COLOR_BLUE
+	#define TRACY_COLOR_BLUE (0x000000FF)
+#endif // TRACY_COLOR_BLUE
+
+#endif // VEGA_CORE_DEBUG_TRACY_H
