@@ -190,6 +190,14 @@ int main(int argc, char** argv, char** envp)
 			double c = math_vector3_length2(a);
 			assert(c == 29.0);
 		}
+		{
+			vector3_t a = math_vector3_set(1.0, 0.0, 0.0);
+			vector3_t b = math_vector3_set(0.0, 1.0, 0.0);
+			vector3_t c = math_vector3_cross(a, b);
+			assert(c.x == 0.0);
+			assert(c.y == 0.0);
+			assert(c.z == 1.0);
+		}
 	}
 
 	{

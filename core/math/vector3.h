@@ -340,13 +340,15 @@ __forceinline vector3_t math_vector3_div_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_norm(vector3_t a)
 {
-#ifdef VEGA_AVX_SUPPORT
-	// TODO
-#elif VEGA_SSE_SUPPORT
-	// TODO
-#else
-	// TODO
-#endif // VEGA_SIMD_SUPPORT
+	double l = math_vector3_length(a);
+	if (l == 0.0)
+	{
+		return math_vector3_zero();
+	}
+	else
+	{
+		return math_vector3_mul_scalar(a, 1.0 / l);
+	}
 }
 __forceinline double math_vector3_dot(vector3_t a, vector3_t b)
 {
@@ -380,11 +382,45 @@ __forceinline double math_vector3_length2(vector3_t a)
 __forceinline vector3_t math_vector3_cross(vector3_t a, vector3_t b)
 {
 #ifdef VEGA_AVX_SUPPORT
-	// TODO
+	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
+	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
+	__m256d vap0 = _mm256_permute4x64_pd(va, _MM_SHUFFLE(3, 0, 2, 1));
+	__m256d vbp0 = _mm256_permute4x64_pd(vb, _MM_SHUFFLE(3, 1, 0, 2));
+	__m256d vap1 = _mm256_permute4x64_pd(va, _MM_SHUFFLE(3, 1, 0, 2));
+	__m256d vbp1 = _mm256_permute4x64_pd(vb, _MM_SHUFFLE(3, 0, 2, 1));
+	__m256d mul0 = _mm256_mul_pd(vap0, vbp0);
+	__m256d mul1 = _mm256_mul_pd(vap1, vbp1);
+	__m256d cross = _mm256_sub_pd(mul0, mul1);
+	vector3_t r =
+	{
+		.x = ((double*)&cross)[0],
+		.y = ((double*)&cross)[1],
+		.z = ((double*)&cross)[2],
+	};
+	return r;
 #elif VEGA_SSE_SUPPORT
-	// TODO
+	__m128d azy = _mm_set_pd(a.z, a.y);
+	__m128d axz = _mm_set_pd(a.x, a.z);
+	__m128d bzy = _mm_set_pd(b.z, b.y);
+	__m128d bxz = _mm_set_pd(b.x, b.z);
+	__m128d mul0 = _mm_mul_pd(azy, bxz);
+	__m128d mul1 = _mm_mul_pd(axz, bzy);
+	__m128d cross = _mm_sub_pd(mul0, mul1);
+	vector3_t r =
+	{
+		.x = ((double*)&cross)[1],
+		.y = ((double*)&cross)[0],
+		.z = (a.x * b.y) - (a.y * b.x),
+	};
+	return r;
 #else
-	// TODO
+	vector3_t r =
+	{
+		.x = (a.y * b.z) - (a.z * b.y),
+		.y = (a.z * b.x) - (a.x * b.z),
+		.z = (a.x * b.y) - (a.y * b.x),
+	};
+	return r;
 #endif // VEGA_SIMD_SUPPORT
 }
 
