@@ -7,6 +7,10 @@
 #include <vega/core/debug/timer.h>
 #include <vega/core/debug/tracy.h>
 
+#include <vega/core/math/vector2.h>
+#include <vega/core/math/vector3.h>
+#include <vega/core/math/vector4.h>
+
 #include <vega/core/std/dat.h>
 #include <vega/core/std/fdat64.h>
 #include <vega/core/std/ecs.h>
