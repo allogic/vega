@@ -122,18 +122,18 @@ typedef enum _mouse_key
 	MOUSE_KEY_RIGHT,
 } mouse_key;
 
-extern void* g_module_handle;
-extern void* g_window_handle;
+extern void* g_platform_module_handle;
+extern void* g_platform_window_handle;
 
-extern uint8_t g_window_should_close;
+extern uint8_t g_platform_window_should_close;
 
-extern int32_t g_window_width;
-extern int32_t g_window_height;
+extern int32_t g_platform_window_width;
+extern int32_t g_platform_window_height;
 
-extern int32_t g_mouse_position_x;
-extern int32_t g_mouse_position_y;
+extern int32_t g_platform_mouse_position_x;
+extern int32_t g_platform_mouse_position_y;
 
-extern int32_t g_mouse_wheel_delta;
+extern int32_t g_platform_mouse_wheel_delta;
 
 ///////////////////////////////////////////////////////////////
 // Public API

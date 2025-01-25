@@ -60,9 +60,11 @@ int main(int argc, char** argv, char** envp)
 	vector_t view = std_ecs_all(&s_ecs, 0b1111111);
 
 	platform_window_alloc("VEGA", 1920, 1080);
+	
 	vulkan_instance_alloc();
+	vulkan_swap_chain_alloc();
 
-	while (g_window_should_close == 0)
+	while (g_platform_window_should_close == 0)
 	{
 		platform_window_poll_events();
 
@@ -71,7 +73,9 @@ int main(int argc, char** argv, char** envp)
 		//Sleep(10);
 	}
 
+	vulkan_swap_chain_free();
 	vulkan_instance_free();
+
 	platform_window_free();
 
 	std_ecs_free(&s_ecs);

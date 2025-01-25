@@ -27,34 +27,34 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx)
 #endif // TRACY_ZONE_END
 
-void* g_module_handle = 0;
-void* g_window_handle = 0;
+void* g_platform_module_handle = 0;
+void* g_platform_window_handle = 0;
 
-uint8_t g_window_should_close = 0;
+uint8_t g_platform_window_should_close = 0;
 
-int32_t g_window_width = 0;
-int32_t g_window_height = 0;
+int32_t g_platform_window_width = 0;
+int32_t g_platform_window_height = 0;
 
-int32_t g_mouse_position_x = 0;
-int32_t g_mouse_position_y = 0;
+int32_t g_platform_mouse_position_x = 0;
+int32_t g_platform_mouse_position_y = 0;
 
-int32_t g_mouse_wheel_delta = 0;
+int32_t g_platform_mouse_wheel_delta = 0;
 
-static LPCSTR s_window_class = "VegaClass";
+static LPCSTR s_platform_window_class = "VegaClass";
 
-static MSG s_message = { 0 };
+static MSG s_platform_message = { 0 };
 
-static keyboard_key_state s_keyboard_key_states[0xFF] = { 0 };
-static mouse_key_state s_mouse_key_states[0x3] = { 0 };
+static keyboard_key_state s_platform_keyboard_key_states[0xFF] = { 0 };
+static mouse_key_state s_platform_mouse_key_states[0x3] = { 0 };
 
 void platform_window_alloc(char const* title, uint32_t width, uint32_t height)
 {
 	TRACY_ZONE_BEGIN
 
-	g_module_handle = GetModuleHandle(0);
+	g_platform_module_handle = GetModuleHandle(0);
 
-	g_window_width = width;
-	g_window_height = height;
+	g_platform_window_width = width;
+	g_platform_window_height = height;
 
 	WNDCLASSEX window_class_ex = { 0 };
 	window_class_ex.cbSize = sizeof(WNDCLASSEX);
@@ -62,12 +62,12 @@ void platform_window_alloc(char const* title, uint32_t width, uint32_t height)
 	window_class_ex.lpfnWndProc = platform_window_message_proc;
 	window_class_ex.cbClsExtra = 0;
 	window_class_ex.cbWndExtra = 0;
-	window_class_ex.hInstance = g_module_handle;
+	window_class_ex.hInstance = g_platform_module_handle;
 	window_class_ex.hIcon = LoadIconA(0, IDI_APPLICATION);
 	window_class_ex.hCursor = LoadCursorA(0, IDC_ARROW);
 	window_class_ex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	window_class_ex.lpszMenuName = 0;
-	window_class_ex.lpszClassName = s_window_class;
+	window_class_ex.lpszClassName = s_platform_window_class;
 	window_class_ex.hIconSm = LoadIconA(0, IDI_APPLICATION);
 
 	RegisterClassExA(&window_class_ex);
@@ -77,10 +77,10 @@ void platform_window_alloc(char const* title, uint32_t width, uint32_t height)
 	INT position_x = (screen_width - width) / 2;
 	INT position_y = (screen_height - height) / 2;
 
-	g_window_handle = CreateWindowExA(0, s_window_class, title, WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, position_x, position_y, width, height, 0, 0, g_module_handle, 0);
+	g_platform_window_handle = CreateWindowExA(0, s_platform_window_class, title, WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, position_x, position_y, width, height, 0, 0, g_platform_module_handle, 0);
 
-	ShowWindow(g_window_handle, SW_SHOW);
-	UpdateWindow(g_window_handle);
+	ShowWindow(g_platform_window_handle, SW_SHOW);
+	UpdateWindow(g_platform_window_handle);
 
 	TRACY_ZONE_END
 }
@@ -88,36 +88,36 @@ void platform_window_poll_events(void)
 {
 	TRACY_ZONE_BEGIN
 
-	g_mouse_wheel_delta = 0;
+	g_platform_mouse_wheel_delta = 0;
 
 	for (UCHAR key_index = 0; key_index < 0xFF; key_index++)
 	{
-		if (s_keyboard_key_states[key_index] == KEYBOARD_KEY_STATE_PRESSED)
+		if (s_platform_keyboard_key_states[key_index] == KEYBOARD_KEY_STATE_PRESSED)
 		{
-			s_keyboard_key_states[key_index] = KEYBOARD_KEY_STATE_DOWN;
+			s_platform_keyboard_key_states[key_index] = KEYBOARD_KEY_STATE_DOWN;
 		}
-		else if (s_keyboard_key_states[key_index] == KEYBOARD_KEY_STATE_RELEASED)
+		else if (s_platform_keyboard_key_states[key_index] == KEYBOARD_KEY_STATE_RELEASED)
 		{
-			s_keyboard_key_states[key_index] = KEYBOARD_KEY_STATE_UP;
+			s_platform_keyboard_key_states[key_index] = KEYBOARD_KEY_STATE_UP;
 		}
 	}
 
 	for (UCHAR key_index = 0; key_index < 0x3; key_index++)
 	{
-		if (s_mouse_key_states[key_index] == MOUSE_KEY_STATE_PRESSED)
+		if (s_platform_mouse_key_states[key_index] == MOUSE_KEY_STATE_PRESSED)
 		{
-			s_mouse_key_states[key_index] = MOUSE_KEY_STATE_DOWN;
+			s_platform_mouse_key_states[key_index] = MOUSE_KEY_STATE_DOWN;
 		}
-		else if (s_mouse_key_states[key_index] == MOUSE_KEY_STATE_RELEASED)
+		else if (s_platform_mouse_key_states[key_index] == MOUSE_KEY_STATE_RELEASED)
 		{
-			s_mouse_key_states[key_index] = MOUSE_KEY_STATE_UP;
+			s_platform_mouse_key_states[key_index] = MOUSE_KEY_STATE_UP;
 		}
 	}
 
-	while (PeekMessageA(&s_message, 0, 0, 0, PM_REMOVE))
+	while (PeekMessageA(&s_platform_message, 0, 0, 0, PM_REMOVE))
 	{
-		TranslateMessage(&s_message);
-		DispatchMessageA(&s_message);
+		TranslateMessage(&s_platform_message);
+		DispatchMessageA(&s_platform_message);
 	}
 
 	TRACY_ZONE_END
@@ -126,7 +126,7 @@ uint8_t platform_window_is_keyboard_key_pressed(keyboard_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t pressed = s_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_PRESSED;
+	uint8_t pressed = s_platform_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_PRESSED;
 
 	TRACY_ZONE_END
 
@@ -136,7 +136,7 @@ uint8_t platform_window_is_keyboard_key_held(keyboard_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t held = (s_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_DOWN) || (s_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_PRESSED);
+	uint8_t held = (s_platform_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_DOWN) || (s_platform_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_PRESSED);
 
 	TRACY_ZONE_END
 
@@ -146,7 +146,7 @@ uint8_t platform_window_is_keyboard_key_released(keyboard_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t released = s_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_RELEASED;
+	uint8_t released = s_platform_keyboard_key_states[Key] == KEYBOARD_KEY_STATE_RELEASED;
 
 	TRACY_ZONE_END
 
@@ -156,7 +156,7 @@ uint8_t platform_window_is_mouse_key_pressed(mouse_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t pressed = s_mouse_key_states[Key] == MOUSE_KEY_STATE_PRESSED;
+	uint8_t pressed = s_platform_mouse_key_states[Key] == MOUSE_KEY_STATE_PRESSED;
 
 	TRACY_ZONE_END
 
@@ -166,7 +166,7 @@ uint8_t platform_window_is_mouse_key_held(mouse_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t held = (s_mouse_key_states[Key] == MOUSE_KEY_STATE_DOWN) || (s_mouse_key_states[Key] == MOUSE_KEY_STATE_PRESSED);
+	uint8_t held = (s_platform_mouse_key_states[Key] == MOUSE_KEY_STATE_DOWN) || (s_platform_mouse_key_states[Key] == MOUSE_KEY_STATE_PRESSED);
 
 	TRACY_ZONE_END
 
@@ -176,7 +176,7 @@ uint8_t platform_window_is_mouse_key_released(mouse_key Key)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t released = s_mouse_key_states[Key] == MOUSE_KEY_STATE_RELEASED;
+	uint8_t released = s_platform_mouse_key_states[Key] == MOUSE_KEY_STATE_RELEASED;
 
 	TRACY_ZONE_END
 
@@ -186,9 +186,9 @@ void platform_window_free(void)
 {
 	TRACY_ZONE_BEGIN
 
-	DestroyWindow(g_window_handle);
+	DestroyWindow(g_platform_window_handle);
 
-	UnregisterClassA(s_window_class, g_module_handle);
+	UnregisterClassA(s_platform_window_class, g_platform_module_handle);
 
 	TRACY_ZONE_END
 }
@@ -198,7 +198,7 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 	{
 		case WM_CLOSE:
 		{
-			g_window_should_close = 1;
+			g_platform_window_should_close = 1;
 
 			break;
 		}
@@ -212,8 +212,8 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 
 			if ((width > 0) && (height > 0))
 			{
-				g_window_width = width;
-				g_window_height = height;
+				g_platform_window_width = width;
+				g_platform_window_height = height;
 			}
 
 			break;
@@ -221,50 +221,50 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
 		{
-			s_keyboard_key_states[w_param] = ((s_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_UP) || (s_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_RELEASED)) ? KEYBOARD_KEY_STATE_PRESSED : KEYBOARD_KEY_STATE_DOWN;
+			s_platform_keyboard_key_states[w_param] = ((s_platform_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_UP) || (s_platform_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_RELEASED)) ? KEYBOARD_KEY_STATE_PRESSED : KEYBOARD_KEY_STATE_DOWN;
 
 			break;
 		}
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 		{
-			s_keyboard_key_states[w_param] = ((s_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_DOWN) || (s_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_PRESSED)) ? KEYBOARD_KEY_STATE_RELEASED : KEYBOARD_KEY_STATE_UP;
+			s_platform_keyboard_key_states[w_param] = ((s_platform_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_DOWN) || (s_platform_keyboard_key_states[w_param] == KEYBOARD_KEY_STATE_PRESSED)) ? KEYBOARD_KEY_STATE_RELEASED : KEYBOARD_KEY_STATE_UP;
 
 			break;
 		}
 		case WM_LBUTTONDOWN:
 		{
-			s_mouse_key_states[MOUSE_KEY_LEFT] = ((s_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_UP) || (s_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
+			s_platform_mouse_key_states[MOUSE_KEY_LEFT] = ((s_platform_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_UP) || (s_platform_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
 
 			break;
 		}
 		case WM_LBUTTONUP:
 		{
-			s_mouse_key_states[MOUSE_KEY_LEFT] = ((s_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_DOWN) || (s_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
+			s_platform_mouse_key_states[MOUSE_KEY_LEFT] = ((s_platform_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_DOWN) || (s_platform_mouse_key_states[MOUSE_KEY_LEFT] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
 
 			break;
 		}
 		case WM_MBUTTONDOWN:
 		{
-			s_mouse_key_states[MOUSE_KEY_MIDDLE] = ((s_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_UP) || (s_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
+			s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] = ((s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_UP) || (s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
 
 			break;
 		}
 		case WM_MBUTTONUP:
 		{
-			s_mouse_key_states[MOUSE_KEY_MIDDLE] = ((s_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_DOWN) || (s_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
+			s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] = ((s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_DOWN) || (s_platform_mouse_key_states[MOUSE_KEY_MIDDLE] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
 
 			break;
 		}
 		case WM_RBUTTONDOWN:
 		{
-			s_mouse_key_states[MOUSE_KEY_RIGHT] = ((s_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_UP) || (s_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
+			s_platform_mouse_key_states[MOUSE_KEY_RIGHT] = ((s_platform_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_UP) || (s_platform_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_RELEASED)) ? MOUSE_KEY_STATE_PRESSED : MOUSE_KEY_STATE_DOWN;
 
 			break;
 		}
 		case WM_RBUTTONUP:
 		{
-			s_mouse_key_states[MOUSE_KEY_RIGHT] = ((s_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_DOWN) || (s_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
+			s_platform_mouse_key_states[MOUSE_KEY_RIGHT] = ((s_platform_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_DOWN) || (s_platform_mouse_key_states[MOUSE_KEY_RIGHT] == MOUSE_KEY_STATE_PRESSED)) ? MOUSE_KEY_STATE_RELEASED : MOUSE_KEY_STATE_UP;
 
 			break;
 		}
@@ -285,14 +285,14 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 			INT position_x = LOWORD(l_param);
 			INT position_y = HIWORD(l_param);
 
-			g_mouse_position_x = position_x;
-			g_mouse_position_y = position_y;
+			g_platform_mouse_position_x = position_x;
+			g_platform_mouse_position_y = position_y;
 
 			break;
 		}
 		case WM_MOUSEWHEEL:
 		{
-			g_mouse_wheel_delta = GET_WHEEL_DELTA_WPARAM(w_param);
+			g_platform_mouse_wheel_delta = GET_WHEEL_DELTA_WPARAM(w_param);
 
 			break;
 		}

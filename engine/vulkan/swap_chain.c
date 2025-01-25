@@ -32,23 +32,23 @@ void vulkan_swap_chain_alloc(void)
 	memset(&swap_chain_create_info, 0, sizeof(VkSwapchainCreateInfoKHR));
 
 	swap_chain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swap_chain_create_info.surface = g_surface;
-	swap_chain_create_info.minImageCount = g_surface_capabilities.minImageCount + 1;
-	swap_chain_create_info.imageFormat = g_prefered_surface_format.format;
-	swap_chain_create_info.imageColorSpace = g_prefered_surface_format.colorSpace;
-	swap_chain_create_info.imageExtent.width = g_surface_capabilities.currentExtent.width;
-	swap_chain_create_info.imageExtent.height = g_surface_capabilities.currentExtent.height;
+	swap_chain_create_info.surface = g_vulkan_surface;
+	swap_chain_create_info.minImageCount = g_vulkan_surface_capabilities.minImageCount + 1;
+	swap_chain_create_info.imageFormat = g_vulkan_prefered_surface_format.format;
+	swap_chain_create_info.imageColorSpace = g_vulkan_prefered_surface_format.colorSpace;
+	swap_chain_create_info.imageExtent.width = g_vulkan_surface_capabilities.currentExtent.width;
+	swap_chain_create_info.imageExtent.height = g_vulkan_surface_capabilities.currentExtent.height;
 	swap_chain_create_info.imageArrayLayers = 1;
 	swap_chain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	swap_chain_create_info.preTransform = g_surface_capabilities.currentTransform;
+	swap_chain_create_info.preTransform = g_vulkan_surface_capabilities.currentTransform;
 	swap_chain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swap_chain_create_info.presentMode = g_prefered_present_mode;
+	swap_chain_create_info.presentMode = g_vulkan_prefered_present_mode;
 	swap_chain_create_info.clipped = 1;
 	swap_chain_create_info.oldSwapchain = 0;
 
-	int32_t queue_families[2] = { g_graphic_and_compute_queue_index, g_present_queue_index };
+	int32_t queue_families[2] = { g_vulkan_graphic_and_compute_queue_index, g_vulkan_present_queue_index };
 
-	if (g_graphic_and_compute_queue_index == g_present_queue_index)
+	if (g_vulkan_graphic_and_compute_queue_index == g_vulkan_present_queue_index)
 	{
 		swap_chain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		swap_chain_create_info.queueFamilyIndexCount = 0;
@@ -61,7 +61,24 @@ void vulkan_swap_chain_alloc(void)
 		swap_chain_create_info.queueFamilyIndexCount = ARRAY_COUNT(queue_families);
 	}
 
-	vkCreateSwapchainKHR(g_device, &swap_chain_create_info, 0, &s_swap_chain);
+	vkCreateSwapchainKHR(g_vulkan_device, &swap_chain_create_info, 0, &s_swap_chain);
+
+	vulkan_swap_chain_images_alloc();
+	vulkan_swap_chain_image_views_alloc();
+
+	TRACY_ZONE_END
+}
+void vulkan_swap_chain_free(void)
+{
+	TRACY_ZONE_BEGIN
+
+	vulkan_swap_chain_image_views_free();
+	vulkan_swap_chain_images_free();
+
+	vkDestroySwapchainKHR(g_vulkan_device, s_swap_chain, 0);
+
+	std_vector_free(&s_swap_chain_image_views);
+	std_vector_free(&s_swap_chain_images);
 
 	TRACY_ZONE_END
 }
@@ -69,15 +86,15 @@ void vulkan_swap_chain_images_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkGetSwapchainImagesKHR(g_device, s_swap_chain, &s_swap_chain_image_count, 0);
+	vkGetSwapchainImagesKHR(g_vulkan_device, s_swap_chain, &s_swap_chain_image_count, 0);
 
 	std_vector_resize(&s_swap_chain_images, s_swap_chain_image_count);
 
-	vkGetSwapchainImagesKHR(g_device, s_swap_chain, &s_swap_chain_image_count, std_vector_buffer(&s_swap_chain_images));
+	vkGetSwapchainImagesKHR(g_vulkan_device, s_swap_chain, &s_swap_chain_image_count, std_vector_buffer(&s_swap_chain_images));
 
-	VkFormat depth_format = vulkan_instance_find_depth_format();
+	VkFormat depth_format = vulkan_image_find_depth_format();
 
-	s_depth_image = vulkan_image_2d_depth_alloc(g_surface_capabilities.currentExtent.width, g_surface_capabilities.currentExtent.height, depth_format);
+	s_depth_image = vulkan_image_2d_depth_alloc(g_vulkan_surface_capabilities.currentExtent.width, g_vulkan_surface_capabilities.currentExtent.height, depth_format);
 
 	TRACY_ZONE_END
 }
@@ -93,21 +110,10 @@ void vulkan_swap_chain_image_views_alloc(void)
 		VkImage image = *(VkImage*)std_vector_at(&s_swap_chain_images, swap_chain_image_index);
 		VkImageView* image_view = (VkImageView*)std_vector_at(&s_swap_chain_image_views, swap_chain_image_index);
 
-		*image_view = vulkan_image_view_alloc(image, VK_IMAGE_VIEW_TYPE_2D, g_prefered_surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT);
+		*image_view = vulkan_image_view_alloc(image, VK_IMAGE_VIEW_TYPE_2D, g_vulkan_prefered_surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		swap_chain_image_index++;
 	}
-
-	TRACY_ZONE_END
-}
-void vulkan_swap_chain_free(void)
-{
-	TRACY_ZONE_BEGIN
-
-	vkDestroySwapchainKHR(g_device, s_swap_chain, 0);
-
-	std_vector_free(&s_swap_chain_image_views);
-	std_vector_free(&s_swap_chain_images);
 
 	TRACY_ZONE_END
 }

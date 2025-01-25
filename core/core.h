@@ -7,6 +7,8 @@
 #include <vega/core/debug/timer.h>
 #include <vega/core/debug/tracy.h>
 
+#include <vega/core/fs/fs.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
 #include <vega/core/math/math.h>
@@ -15,7 +17,6 @@
 #include <vega/core/math/vector3.h>
 #include <vega/core/math/vector4.h>
 #include <vega/core/math/quaternion.h>
-
 
 #include <vega/core/std/dat.h>
 #include <vega/core/std/fdat64.h>
