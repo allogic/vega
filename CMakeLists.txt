@@ -14,8 +14,6 @@ set (CMAKE_C_EXTENSIONS OFF)
 # Set SDK paths
 ###############################################################
 
-set (ASSIMP_SDK "${CMAKE_SOURCE_DIR}/assimp")
-set (TRACY_SDK "${CMAKE_SOURCE_DIR}/tracy")
 set (VULKAN_SDK "C:/VulkanSDK/1.4.304.0")
 
 ###############################################################
@@ -196,7 +194,7 @@ endif ()
 ###############################################################
 
 include_directories ("${CMAKE_SOURCE_DIR}/..")
-include_directories ("${TRACY_SDK}/public")
+include_directories ("${CMAKE_SOURCE_DIR}/.")
 
 ###############################################################
 # Set global link paths

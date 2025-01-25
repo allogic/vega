@@ -2,11 +2,11 @@
 #include <vega/engine/vulkan/vulkan.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U)
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END
-	#define TRACY_ZONE_END TracyCZoneEnd(ctx)
+	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
 int32_t vulkan_find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags memory_property_flags)

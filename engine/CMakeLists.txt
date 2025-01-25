@@ -6,10 +6,10 @@ add_subdirectory (asset)
 add_subdirectory (platform)
 add_subdirectory (vulkan)
 
-target_include_directories (engine PUBLIC "${ASSIMP_SDK}/Include")
 target_include_directories (engine PUBLIC "${VULKAN_SDK}/include")
 
 target_link_directories (engine PUBLIC "${VULKAN_SDK}/Lib")
 
 target_link_libraries (engine PUBLIC "vulkan-1.lib")
+target_link_libraries (engine PUBLIC "assimp-vc143-mt.lib")
 target_link_libraries (engine PUBLIC core)

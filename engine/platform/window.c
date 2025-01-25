@@ -2,6 +2,14 @@
 
 #include <vega/engine/platform/window.h>
 
+#ifndef TRACY_ZONE_BEGIN
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
+#endif // TRACY_ZONE_BEGIN
+
+#ifndef TRACY_ZONE_END
+	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
+#endif // TRACY_ZONE_END
+
 typedef enum _keyboard_key_state
 {
 	KEYBOARD_KEY_STATE_UP,
@@ -18,14 +26,6 @@ typedef enum _mouse_key_state
 } mouse_key_state;
 
 static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
-
-#ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U)
-#endif // TRACY_ZONE_BEGIN
-
-#ifndef TRACY_ZONE_END
-	#define TRACY_ZONE_END TracyCZoneEnd(ctx)
-#endif // TRACY_ZONE_END
 
 void* g_platform_module_handle = 0;
 void* g_platform_window_handle = 0;

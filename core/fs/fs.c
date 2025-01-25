@@ -7,11 +7,11 @@
 #include <vega/core/fs/fs.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U)
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END
-	#define TRACY_ZONE_END TracyCZoneEnd(ctx)
+	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
 uint8_t fs_read_text(uint8_t** buffer, uint64_t* buffer_size, char const* file_path)

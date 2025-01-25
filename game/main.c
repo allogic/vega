@@ -5,11 +5,11 @@
 #include <vega/engine/engine.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U)
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END
-	#define TRACY_ZONE_END TracyCZoneEnd(ctx)
+	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
 static void ecs_for_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
