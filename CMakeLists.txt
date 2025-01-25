@@ -86,8 +86,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
 		set (SIMD_FLAGS "${SIMD_FLAGS} /arch:SSE2")
 
-		add_compile_definitions (VEGA_SSE_SUPPORT)
-		add_compile_definitions (VEGA_SSE2_SUPPORT)
+		#add_compile_definitions (VEGA_SSE_SUPPORT)
+		#add_compile_definitions (VEGA_SSE2_SUPPORT)
 
 	endif ()
 
@@ -95,7 +95,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
 		set (SIMD_FLAGS "${SIMD_FLAGS} /arch:AVX")
 
-		add_compile_definitions (VEGA_AVX_SUPPORT)
+		#add_compile_definitions (VEGA_AVX_SUPPORT)
 
 	endif ()
 
@@ -103,8 +103,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
 		set (SIMD_FLAGS "${SIMD_FLAGS} /arch:AVX2")
 
-		add_compile_definitions (VEGA_AVX_SUPPORT)
-		add_compile_definitions (VEGA_AVX2_SUPPORT)
+		#add_compile_definitions (VEGA_AVX_SUPPORT)
+		#add_compile_definitions (VEGA_AVX2_SUPPORT)
 
 	endif ()
 
@@ -112,8 +112,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
 		set (SIMD_FLAGS "${SIMD_FLAGS} /arch:AVX512")
 
-		add_compile_definitions (VEGA_AVX_SUPPORT)
-		add_compile_definitions (VEGA_AVX512_SUPPORT)
+		#add_compile_definitions (VEGA_AVX_SUPPORT)
+		#add_compile_definitions (VEGA_AVX512_SUPPORT)
 
 	endif()
 
