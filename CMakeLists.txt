@@ -194,7 +194,7 @@ endif ()
 ###############################################################
 
 include_directories ("${CMAKE_SOURCE_DIR}/..")
-include_directories ("${CMAKE_SOURCE_DIR}/.")
+include_directories ("${CMAKE_SOURCE_DIR}/vendor")
 
 ###############################################################
 # Set global link paths
