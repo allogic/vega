@@ -23,7 +23,16 @@ asset_t asset_loader_load(char const* file_path)
 	asset_t asset;
 	memset(&asset, 0, sizeof(asset_t));
 
-	const struct aiScene* scene = aiImportFile(file_path, aiProcess_ValidateDataStructure | aiProcess_GenSmoothNormals | aiProcess_LimitBoneWeights | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_PopulateArmatureData);
+	uint32_t flags =
+		aiProcess_ValidateDataStructure |
+		aiProcess_GenSmoothNormals |
+		aiProcess_LimitBoneWeights |
+		aiProcess_Triangulate |
+		aiProcess_FlipUVs |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_PopulateArmatureData;
+
+	const struct aiScene* scene = aiImportFile(file_path, flags);
 
 	if (scene)
 	{
@@ -96,7 +105,7 @@ void asset_print_stats_raw(struct aiScene const* scene)
 			struct aiMaterialProperty const* assimp_material_property = assimp_material->mProperties[property_index];
 
 			printf("\tProperty_%u\n", property_index);
-			printf("\t\tKey %s\n", assimp_material_property->mKey.data + 1); // TODO: why is the first character garbage..?
+			printf("\t\tKey %s\n", assimp_material_property->mKey.data + 1);
 			printf("\t\tSemantic %u\n", assimp_material_property->mSemantic);
 			printf("\t\tTexture Index %u\n", assimp_material_property->mIndex);
 			printf("\t\tValue ");
@@ -117,7 +126,7 @@ void asset_print_stats_raw(struct aiScene const* scene)
 				}
 				case aiPTI_String:
 				{
-					uint32_t data_index = 1; // TODO: why is the first character garbage..?
+					uint32_t data_index = 1;
 					while (data_index < assimp_material_property->mDataLength)
 					{
 						printf("%c", assimp_material_property->mData[data_index]);
@@ -135,7 +144,7 @@ void asset_print_stats_raw(struct aiScene const* scene)
 				}
 				case aiPTI_Buffer:
 				{
-					uint32_t data_index = 0;
+					uint32_t data_index = 1;
 					while (data_index < assimp_material_property->mDataLength)
 					{
 						printf("%02X ", assimp_material_property->mData[data_index]);
@@ -148,7 +157,6 @@ void asset_print_stats_raw(struct aiScene const* scene)
 			}
 
 			printf("\n");
-			printf("\n");
 
 			property_index++;
 		}
@@ -156,6 +164,20 @@ void asset_print_stats_raw(struct aiScene const* scene)
 		printf("\n");
 
 		material_index++;
+	}
+
+	uint32_t texture_index = 0;
+	while (texture_index < scene->mNumTextures)
+	{
+		struct aiTexture const* assimp_texture = scene->mTextures[texture_index];
+
+		printf("Texture_%u\n", texture_index);
+		printf("\tFile Name %s\n", assimp_texture->mFilename.data);
+		printf("\tWidth %u\n", assimp_texture->mWidth);
+		printf("\tHeight %u\n", assimp_texture->mHeight);
+		printf("\n");
+
+		texture_index++;
 	}
 
 	uint32_t mesh_index = 0;
@@ -186,6 +208,19 @@ void asset_print_stats_raw(struct aiScene const* scene)
 		printf("\n");
 
 		animation_index++;
+	}
+
+	uint32_t skeleton_index = 0;
+	while (skeleton_index < scene->mNumSkeletons)
+	{
+		struct aiSkeleton const* assimp_skeleton = scene->mSkeletons[skeleton_index];
+
+		printf("Skeleton_%u\n", skeleton_index);
+		printf("\tName %s\n", assimp_skeleton->mName.data);
+		printf("\tBones %u\n", assimp_skeleton->mNumBones);
+		printf("\n");
+
+		skeleton_index++;
 	}
 
 	TRACY_ZONE_END
