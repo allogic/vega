@@ -22,6 +22,8 @@ int main(int argc, char** argv, char** envp)
 
 	VEGA_MATH_TESTS
 
+	asset_loader_load("C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
+
 	s_ecs = std_ecs_alloc();
 
 	std_ecs_register(&s_ecs, 0, sizeof(uint64_t));
