@@ -23,10 +23,6 @@
 
 static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
 
-static time_info_t s_vulkan_renderer_time_info = { 0 };
-static screen_info_t s_vulkan_renderer_screen_info = { 0 };
-static projection_info_t s_vulkan_renderer_projection_info = { 0 };
-
 static buffer_t s_vulkan_renderer_time_info_buffer = { 0 };
 static buffer_t s_vulkan_renderer_screen_info_buffer = { 0 };
 static buffer_t s_vulkan_renderer_projection_info_buffer = { 0 };
@@ -403,10 +399,20 @@ static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t ent
 		}
 		case CAMERA_MODE_PERSP:
 		{
-			// TODO
+			projection_info_t* projection_info = (projection_info_t*)s_vulkan_renderer_projection_info_buffer.mapped_buffer;
 
-			//s_vulkan_renderer_projection_info.view = math_matrix4_look_at(transform->world_position, transform->world_position + transform->local_front, g_world_up);
-			s_vulkan_renderer_projection_info.projection = math_matrix4_persp(camera->fov, (double)g_platform_window_width / (double)g_platform_window_height, camera->near_z, camera->far_z);
+			vector3_t eye = transform->world_position;
+			vector3_t center = math_vector3_add(transform->world_position, transform->local_front);
+			vector3_t up = g_world_up;
+
+			projection_info->view = math_matrix4_look_at(eye, center, up);
+
+			double fov = camera->fov;
+			double aspect_ratio = (double)g_platform_window_width / (double)g_platform_window_height;
+			double near_z = camera->near_z;
+			double far_z = camera->far_z;
+
+			projection_info->projection = math_matrix4_persp(fov, aspect_ratio, near_z, far_z);
 
 			break;
 		}

@@ -11,7 +11,7 @@ typedef enum _camera_mode_t
 	CAMERA_MODE_PERSP,
 } camera_mode_t;
 
-typedef union _camera_t
+typedef struct _camera_t
 {
 	camera_mode_t mode;
 	struct
@@ -24,9 +24,6 @@ typedef union _camera_t
 	struct
 	{
 		double fov;
-		double reserved_0;
-		double reserved_1;
-		double reserved_2;
 	};
 	double near_z;
 	double far_z;

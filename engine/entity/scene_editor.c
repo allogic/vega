@@ -12,6 +12,7 @@ uint64_t entity_scene_editor_create(ecs_t* ecs)
 
 	camera_t camera =
 	{
+		.mode = CAMERA_MODE_PERSP,
 		.fov = math_deg_to_rad(45.0),
 		.near_z = 1.0E-6,
 		.far_z = 1.0E6,
