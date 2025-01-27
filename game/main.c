@@ -59,18 +59,12 @@ int main(int argc, char** argv, char** envp)
 
 	vector_t view = std_ecs_all(&s_ecs, 0b1111111);
 
-	platform_window_alloc("VEGA", 1920, 1080);
-	
 	asset_loader_alloc();
 
-	asset_t* cyberdemon_model = asset_loader_load_model(0, "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
-	asset_t* cockpit_model = asset_loader_load_model(0, "cockpit", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit\\cockpit2.fbx");
+	//asset_t* cyberdemon_model = asset_loader_load_model(0, "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
+	//asset_t* cockpit_model = asset_loader_load_model(0, "cockpit", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit\\cockpit2.fbx");
 
-	//WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-	//ReleaseMutex(s_asset_mutex_handle);
-
-	//vulkan_instance_alloc();
-	//vulkan_swap_chain_alloc();
+	platform_window_alloc("VEGA", 1920, 1080);
 
 	while (g_platform_window_should_close == 0)
 	{
@@ -81,12 +75,9 @@ int main(int argc, char** argv, char** envp)
 		//Sleep(10);
 	}
 
-	//vulkan_swap_chain_free();
-	//vulkan_instance_free();
+	platform_window_free();
 
 	asset_loader_free();
-
-	platform_window_free();
 
 	std_ecs_free(&s_ecs);
 

@@ -7,6 +7,10 @@
 	#define VEGA_ASSERT(EXPRESSION, MESSAGE) (assert((EXPRESSION) && MESSAGE))
 #endif // VEGA_ASSERT
 
+#ifndef VEGA_OFFSET_OF
+	#define VEGA_OFFSET_OF(TYPE, MEMBER) ((uint64_t)&(((TYPE*)0)->MEMBER))
+#endif // VEGA_OFFSET_OF
+
 #ifndef ARRAY_COUNT
 	#define ARRAY_COUNT(ARRAY) ((uint64_t)(sizeof(ARRAY) / sizeof((ARRAY)[0])))
 #endif // ARRAY_COUNT

@@ -3,9 +3,9 @@
 
 #include <math.h>
 
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	#include <immintrin.h>
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	#include <emmintrin.h>
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
@@ -41,7 +41,7 @@ __forceinline vector3_t math_vector3_from_xyz(double x, double y, double z)
 }
 __forceinline vector3_t math_vector3_add(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -55,7 +55,7 @@ __forceinline vector3_t math_vector3_add(vector3_t a, vector3_t b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 
@@ -82,7 +82,7 @@ __forceinline vector3_t math_vector3_add(vector3_t a, vector3_t b)
 }
 __forceinline vector3_t math_vector3_sub(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -96,7 +96,7 @@ __forceinline vector3_t math_vector3_sub(vector3_t a, vector3_t b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 
@@ -123,7 +123,7 @@ __forceinline vector3_t math_vector3_sub(vector3_t a, vector3_t b)
 }
 __forceinline vector3_t math_vector3_mul(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -137,7 +137,7 @@ __forceinline vector3_t math_vector3_mul(vector3_t a, vector3_t b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 
@@ -164,7 +164,7 @@ __forceinline vector3_t math_vector3_mul(vector3_t a, vector3_t b)
 }
 __forceinline vector3_t math_vector3_div(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -178,7 +178,7 @@ __forceinline vector3_t math_vector3_div(vector3_t a, vector3_t b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 
@@ -205,7 +205,7 @@ __forceinline vector3_t math_vector3_div(vector3_t a, vector3_t b)
 }
 __forceinline vector3_t math_vector3_add_scalar(vector3_t a, double b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set1_pd(b);
 
@@ -219,7 +219,7 @@ __forceinline vector3_t math_vector3_add_scalar(vector3_t a, double b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b, b);
 
@@ -246,7 +246,7 @@ __forceinline vector3_t math_vector3_add_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_sub_scalar(vector3_t a, double b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set1_pd(b);
 
@@ -260,7 +260,7 @@ __forceinline vector3_t math_vector3_sub_scalar(vector3_t a, double b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b, b);
 
@@ -287,7 +287,7 @@ __forceinline vector3_t math_vector3_sub_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_mul_scalar(vector3_t a, double b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set1_pd(b);
 
@@ -301,7 +301,7 @@ __forceinline vector3_t math_vector3_mul_scalar(vector3_t a, double b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b, b);
 
@@ -328,7 +328,7 @@ __forceinline vector3_t math_vector3_mul_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_div_scalar(vector3_t a, double b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set1_pd(b);
 
@@ -342,7 +342,7 @@ __forceinline vector3_t math_vector3_div_scalar(vector3_t a, double b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b, b);
 
@@ -369,20 +369,11 @@ __forceinline vector3_t math_vector3_div_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_norm(vector3_t a)
 {
-	double l = math_vector3_length(a);
-
-	if (l == 0.0)
-	{
-		return math_vector3_zero();
-	}
-	else
-	{
-		return math_vector3_mul_scalar(a, 1.0 / l);
-	}
+	return math_vector3_mul_scalar(a, 1.0 / math_vector3_length(a));
 }
 __forceinline vector3_t math_vector3_cross(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -404,7 +395,7 @@ __forceinline vector3_t math_vector3_cross(vector3_t a, vector3_t b)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d azy = _mm_set_pd(a.z, a.y);
 	__m128d axz = _mm_set_pd(a.x, a.z);
 	__m128d bzy = _mm_set_pd(b.z, b.y);
@@ -463,7 +454,7 @@ __forceinline vector3_t math_vector3_rotate(vector3_t a, quaternion_t b)
 }
 __forceinline double math_vector3_dot(vector3_t a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(0.0, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(0.0, b.z, b.y, b.x);
 
@@ -477,7 +468,7 @@ __forceinline double math_vector3_dot(vector3_t a, vector3_t b)
 	__m128d dot = _mm_add_pd(low, high);
 
 	return ((double*)&dot)[0];
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 

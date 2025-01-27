@@ -2,6 +2,10 @@
 
 #include <vega/engine/platform/window.h>
 
+#include <vega/engine/vulkan/instance.h>
+#include <vega/engine/vulkan/swap_chain.h>
+#include <vega/engine/vulkan/renderer.h>
+
 #ifndef TRACY_ZONE_BEGIN
 	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
 #endif // TRACY_ZONE_BEGIN
@@ -47,6 +51,8 @@ static MSG s_platform_message = { 0 };
 static keyboard_key_state s_platform_keyboard_key_states[0xFF] = { 0 };
 static mouse_key_state s_platform_mouse_key_states[0x3] = { 0 };
 
+static uint8_t s_platform_window_allocated = 0;
+
 void platform_window_alloc(char const* title, uint32_t width, uint32_t height)
 {
 	TRACY_ZONE_BEGIN
@@ -81,6 +87,25 @@ void platform_window_alloc(char const* title, uint32_t width, uint32_t height)
 
 	ShowWindow(g_platform_window_handle, SW_SHOW);
 	UpdateWindow(g_platform_window_handle);
+
+	TRACY_ZONE_END
+}
+void platform_window_free(void)
+{
+	TRACY_ZONE_BEGIN
+
+	if (s_platform_window_allocated)
+	{
+		s_platform_window_allocated = 0;
+
+		vulkan_renderer_free();
+		vulkan_swap_chain_free();
+		vulkan_instance_free();
+	}
+
+	DestroyWindow(g_platform_window_handle);
+
+	UnregisterClassA(s_platform_window_class, g_platform_module_handle);
 
 	TRACY_ZONE_END
 }
@@ -182,13 +207,26 @@ uint8_t platform_window_is_mouse_key_released(mouse_key Key)
 
 	return released;
 }
-void platform_window_free(void)
+void platform_window_resize(uint32_t width, uint32_t height)
 {
 	TRACY_ZONE_BEGIN
 
-	DestroyWindow(g_platform_window_handle);
+	if (s_platform_window_allocated)
+	{
+		vulkan_renderer_resize_before();
+		vulkan_swap_chain_resize_before();
+	}
 
-	UnregisterClassA(s_platform_window_class, g_platform_module_handle);
+	g_platform_window_width = width;
+	g_platform_window_height = height;
+
+	if (s_platform_window_allocated)
+	{
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_vulkan_instance_physical_device, g_vulkan_instance_surface, &g_vulkan_instance_surface_capabilities);
+
+		vulkan_swap_chain_resize_after();
+		vulkan_renderer_resize_after();
+	}
 
 	TRACY_ZONE_END
 }
@@ -210,10 +248,18 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 			INT width = client_rect.right - client_rect.left;
 			INT height = client_rect.bottom - client_rect.top;
 
-			if ((width > 0) && (height > 0))
+			if ((width > 0) && (height > 0) && (g_platform_window_width != width) && (g_platform_window_height != height))
 			{
-				g_platform_window_width = width;
-				g_platform_window_height = height;
+				platform_window_resize(width, height);
+
+				if (s_platform_window_allocated == 0)
+				{
+					s_platform_window_allocated = 1;
+
+					vulkan_instance_alloc();
+					vulkan_swap_chain_alloc();
+					vulkan_renderer_alloc();
+				}
 			}
 
 			break;

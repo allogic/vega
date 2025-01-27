@@ -3,9 +3,9 @@
 
 #include <math.h>
 
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	#include <immintrin.h>
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	#include <emmintrin.h>
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
@@ -55,9 +55,9 @@ __forceinline quaternion_t math_quaternion_from_xyzw(double x, double y, double 
 }
 __forceinline quaternion_t math_quaternion_mul(quaternion_t a, quaternion_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	quaternion_t r =
@@ -97,9 +97,9 @@ __forceinline quaternion_t math_quaternion_conjugate(quaternion_t a)
 }
 __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	double srcp = 2.0 * ((a.w * a.x) + (a.y * a.z));
@@ -134,9 +134,9 @@ __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a)
 }
 __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y, double z, double w)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	double srcp = 2.0 * ((w * x) + (y * z));
@@ -171,7 +171,7 @@ __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y,
 }
 __forceinline quaternion_t math_quaternion_from_euler_angles(vector3_t a)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO: properly vectorize this function..
 
 	double pitch = math_deg_to_rad(a.x);
@@ -193,7 +193,7 @@ __forceinline quaternion_t math_quaternion_from_euler_angles(vector3_t a)
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	double pitch = math_deg_to_rad(a.x);
@@ -221,7 +221,7 @@ __forceinline quaternion_t math_quaternion_from_euler_angles(vector3_t a)
 }
 __forceinline quaternion_t math_quaternion_from_euler_angles_xyz(double x, double y, double z)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO: properly vectorize this function..
 
 	double pitch = math_deg_to_rad(x);
@@ -243,7 +243,7 @@ __forceinline quaternion_t math_quaternion_from_euler_angles_xyz(double x, doubl
 	};
 
 	return r;
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	double pitch = math_deg_to_rad(x);
@@ -271,9 +271,9 @@ __forceinline quaternion_t math_quaternion_from_euler_angles_xyz(double x, doubl
 }
 __forceinline quaternion_t math_quaternion_angle_axis(double a, vector3_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	// TODO
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
 	vector3_t n = math_vector3_norm(b);
@@ -294,20 +294,11 @@ __forceinline quaternion_t math_quaternion_angle_axis(double a, vector3_t b)
 }
 __forceinline quaternion_t math_quaternion_norm(quaternion_t a)
 {
-	double l = math_quaternion_length(a);
-
-	if (l == 0.0)
-	{
-		return math_quaternion_zero();
-	}
-	else
-	{
-		return math_quaternion_mul_scalar(a, 1.0 / l);
-	}
+	return math_quaternion_mul_scalar(a, 1.0 / math_quaternion_length(a));
 }
 __forceinline double math_quaternion_dot(quaternion_t a, quaternion_t b)
 {
-#ifdef VEGA_AVX_SUPPORT
+#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	__m256d va = _mm256_set_pd(a.w, a.z, a.y, a.x);
 	__m256d vb = _mm256_set_pd(b.w, b.z, b.y, b.x);
 
@@ -321,7 +312,7 @@ __forceinline double math_quaternion_dot(quaternion_t a, quaternion_t b)
 	__m128d dot = _mm_add_pd(low, high);
 
 	return ((double*)&dot)[0];
-#elif VEGA_SSE_SUPPORT
+#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	__m128d va = _mm_set_pd(a.y, a.x);
 	__m128d vb = _mm_set_pd(b.y, b.x);
 	__m128d vc = _mm_set_pd(a.w, a.z);

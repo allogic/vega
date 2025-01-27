@@ -23,7 +23,7 @@
 #include <vega/engine/asset/model.h>
 #include <vega/engine/asset/texture.h>
 
-#include <vega/engine/renderer/vertex.h>
+#include <vega/engine/vulkan/vertex.h>
 
 #ifndef TRACY_THREAD_NAME
 	#define TRACY_THREAD_NAME(NAME) TracyCSetThreadName(NAME);
@@ -41,10 +41,10 @@
 	#define ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES (4ULL)
 #endif // ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES
 
-static LRESULT WINAPI asset_loader_load_physical_model_thread(PVOID user_param);
-static LRESULT WINAPI asset_loader_load_physical_texture_thread(PVOID user_param);
-static LRESULT WINAPI asset_loader_load_virtual_material_thread(PVOID user_param);
-static LRESULT WINAPI asset_loader_load_virtual_mesh_thread(PVOID user_param);
+static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param);
+static LRESULT WINAPI asset_loader_load_texture_thread(PVOID user_param);
+static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param);
+static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param);
 
 static HANDLE s_asset_mutex_handle = 0;
 
@@ -94,7 +94,7 @@ asset_t* asset_loader_load_model(asset_t* parent, char const* file_stem, char co
 
 	args->asset = asset;
 
-	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_physical_model_thread, args, 0, NULL);
+	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_model_thread, args, 0, NULL);
 
 	TRACY_ZONE_END
 
@@ -130,13 +130,13 @@ asset_t* asset_loader_load_texture(asset_t* parent, char const* file_stem, char 
 
 	args->asset = asset;
 
-	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_physical_texture_thread, args, 0, NULL);
+	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_texture_thread, args, 0, NULL);
 
 	TRACY_ZONE_END
 
 	return asset;
 }
-void asset_loader_load_virtual_materials(asset_t* parent, struct aiScene const* assimp_scene)
+void asset_loader_load_materials(asset_t* parent, struct aiScene const* assimp_scene)
 {
 	TRACY_ZONE_BEGIN
 
@@ -179,14 +179,14 @@ void asset_loader_load_virtual_materials(asset_t* parent, struct aiScene const* 
 		args->assimp_scene = assimp_scene;
 		args->material_index = material_index;
 
-		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_virtual_material_thread, args, 0, NULL);
+		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_material_thread, args, 0, NULL);
 
 		material_index++;
 	}
 
 	TRACY_ZONE_END
 }
-void asset_loader_load_virtual_meshes(asset_t* parent, struct aiScene const* assimp_scene)
+void asset_loader_load_meshes(asset_t* parent, struct aiScene const* assimp_scene)
 {
 	TRACY_ZONE_BEGIN
 
@@ -223,7 +223,7 @@ void asset_loader_load_virtual_meshes(asset_t* parent, struct aiScene const* ass
 		args->assimp_scene = assimp_scene;
 		args->mesh_index = mesh_index;
 
-		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_virtual_mesh_thread, args, 0, NULL);
+		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_mesh_thread, args, 0, NULL);
 
 		mesh_index++;
 	}
@@ -403,7 +403,7 @@ void asset_loader_wait_sub_assets(asset_t* asset)
 
 	TRACY_ZONE_END
 }
-static LRESULT WINAPI asset_loader_load_physical_model_thread(PVOID user_param)
+static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param)
 {
 	TRACY_THREAD_NAME("Load Model")
 	TRACY_ZONE_BEGIN
@@ -429,8 +429,8 @@ static LRESULT WINAPI asset_loader_load_physical_model_thread(PVOID user_param)
 	{
 		if (assimp_scene->mRootNode && (assimp_scene->mFlags & ~(AI_SCENE_FLAGS_INCOMPLETE)))
 		{
-			asset_loader_load_virtual_materials(asset, assimp_scene);
-			asset_loader_load_virtual_meshes(asset, assimp_scene);
+			asset_loader_load_materials(asset, assimp_scene);
+			asset_loader_load_meshes(asset, assimp_scene);
 		}
 
 		asset_loader_wait_sub_assets(asset);
@@ -451,7 +451,7 @@ static LRESULT WINAPI asset_loader_load_physical_model_thread(PVOID user_param)
 
 	return 0;
 }
-static LRESULT WINAPI asset_loader_load_physical_texture_thread(PVOID user_param)
+static LRESULT WINAPI asset_loader_load_texture_thread(PVOID user_param)
 {
 	TRACY_THREAD_NAME("Load Texture")
 	TRACY_ZONE_BEGIN
@@ -477,7 +477,7 @@ static LRESULT WINAPI asset_loader_load_physical_texture_thread(PVOID user_param
 
 	return 0;
 }
-static LRESULT WINAPI asset_loader_load_virtual_material_thread(PVOID user_param)
+static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 {
 	TRACY_THREAD_NAME("Load Material")
 	TRACY_ZONE_BEGIN
@@ -595,7 +595,7 @@ static LRESULT WINAPI asset_loader_load_virtual_material_thread(PVOID user_param
 
 	return 0;
 }
-static LRESULT WINAPI asset_loader_load_virtual_mesh_thread(PVOID user_param)
+static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param)
 {
 	TRACY_THREAD_NAME("Load Mesh")
 	TRACY_ZONE_BEGIN
@@ -667,8 +667,8 @@ static LRESULT WINAPI asset_loader_load_virtual_mesh_thread(PVOID user_param)
 
 			if (assimp_mesh->mTextureCoords[0])
 			{
-				pbr_vertex.texture_channel_0.x = assimp_mesh->mTextureCoords[0][vertex_index].x;
-				pbr_vertex.texture_channel_0.y = assimp_mesh->mTextureCoords[0][vertex_index].y;
+				pbr_vertex.texcoord_channel_0.x = assimp_mesh->mTextureCoords[0][vertex_index].x;
+				pbr_vertex.texcoord_channel_0.y = assimp_mesh->mTextureCoords[0][vertex_index].y;
 			}
 
 			std_vector_push(&asset_mesh->pbr_vertices, &pbr_vertex);

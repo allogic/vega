@@ -11,26 +11,26 @@
 
 extern VkInstance g_vulkan_instance;
 
-extern VkSurfaceKHR g_vulkan_surface;
-extern VkSurfaceCapabilitiesKHR g_vulkan_surface_capabilities;
+extern VkSurfaceKHR g_vulkan_instance_surface;
+extern VkSurfaceCapabilitiesKHR g_vulkan_instance_surface_capabilities;
 
-extern VkPhysicalDevice g_vulkan_physical_device;
-extern VkPhysicalDeviceProperties g_vulkan_physical_device_properties;
-extern VkPhysicalDeviceFeatures g_vulkan_physical_device_features;
+extern VkPhysicalDevice g_vulkan_instance_physical_device;
+extern VkPhysicalDeviceProperties g_vulkan_instance_physical_device_properties;
+extern VkPhysicalDeviceFeatures g_vulkan_instance_physical_device_features;
 
-extern int32_t g_vulkan_graphic_and_compute_queue_index;
-extern int32_t g_vulkan_present_queue_index;
+extern int32_t g_vulkan_instance_graphic_and_compute_queue_index;
+extern int32_t g_vulkan_instance_present_queue_index;
 
-extern VkDevice g_vulkan_device;
+extern VkDevice g_vulkan_instance_device;
 
-extern VkQueue g_vulkan_graphic_queue;
-extern VkQueue g_vulkan_compute_queue;
-extern VkQueue g_vulkan_present_queue;
+extern VkQueue g_vulkan_instance_graphic_queue;
+extern VkQueue g_vulkan_instance_compute_queue;
+extern VkQueue g_vulkan_instance_present_queue;
 
-extern VkSurfaceFormatKHR g_vulkan_prefered_surface_format;
-extern VkPresentModeKHR g_vulkan_prefered_present_mode;
+extern VkSurfaceFormatKHR g_vulkan_instance_prefered_surface_format;
+extern VkPresentModeKHR g_vulkan_instance_prefered_present_mode;
 
-extern VkCommandPool g_vulkan_command_pool;
+extern VkCommandPool g_vulkan_instance_command_pool;
 
 ///////////////////////////////////////////////////////////////
 // Public API

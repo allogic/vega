@@ -4,7 +4,6 @@ add_library (engine STATIC ${SRC_FILES})
 
 add_subdirectory (asset)
 add_subdirectory (platform)
-add_subdirectory (renderer)
 add_subdirectory (vulkan)
 
 target_compile_definitions (engine PUBLIC "_CRT_SECURE_NO_WARNINGS")

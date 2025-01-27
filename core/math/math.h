@@ -2,6 +2,7 @@
 #define VEGA_CORE_MATH_H
 
 #include <math.h>
+#include <stdint.h>
 
 #include <vega/core/math/forward.h>
 
@@ -16,6 +17,18 @@ __forceinline double math_deg_to_rad(double a)
 __forceinline double math_rad_to_deg(double a)
 {
 	return a * MATH_RAD_TO_DEG;
+}
+__forceinline double math_fast_inverse_sqrt(double a)
+{
+	double r = a;
+
+	uint64_t i = *(uint64_t*)&r;
+
+	i = 0x5fe6eb50c7b537a9 - (i >> 1);
+	r = *(double*)&i;
+	r = r * (1.5 - (a * 0.5 * r * r));
+
+	return r;
 }
 
 #endif // VEGA_CORE_MATH_H

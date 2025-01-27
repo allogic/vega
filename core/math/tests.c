@@ -104,6 +104,14 @@ void math_tests()
 		}
 
 		{
+			vector2_t a = math_vector2_from_xy(4.0, 8.0);
+			vector2_t b = math_vector2_norm(a);
+			double c = math_vector2_length(b);
+
+			ASSERT_VALUE(c, 1.0);
+		}
+
+		{
 			vector2_t a = math_vector2_from_xy(3.0, 4.0);
 			vector2_t b = math_vector2_from_xy(2.0, 1.0);
 			double c = math_vector2_dot(a, b);
@@ -217,6 +225,14 @@ void math_tests()
 			ASSERT_VALUE(c.x, 2.0);
 			ASSERT_VALUE(c.y, 4.0);
 			ASSERT_VALUE(c.z, 1.0);
+		}
+
+		{
+			vector3_t a = math_vector3_from_xyz(4.0, 8.0, 3.0);
+			vector3_t b = math_vector3_norm(a);
+			double c = math_vector3_length(b);
+
+			ASSERT_VALUE(c, 1.0);
 		}
 
 		{
@@ -386,6 +402,14 @@ void math_tests()
 		}
 
 		{
+			vector4_t a = math_vector4_from_xyzw(4.0, 8.0, 3.0, 5.0);
+			vector4_t b = math_vector4_norm(a);
+			double c = math_vector4_length(b);
+
+			ASSERT_VALUE(c, 1.0);
+		}
+
+		{
 			vector4_t a = math_vector4_from_xyzw(3.0, 4.0, 2.0, 5.0);
 			vector4_t b = math_vector4_from_xyzw(2.0, 1.0, 3.0, 4.0);
 			double c = math_vector4_dot(a, b);
@@ -519,5 +543,7 @@ void math_tests()
 			ASSERT_VALUE(c, 54.0);
 		}
 	}
+
+	// TODO: add matrix4 tests..
 }
 #endif // VEGA_DEBUG

@@ -13,4 +13,24 @@
 	#define MATH_RAD_TO_DEG (57.29577951308232286465)
 #endif // MATH_RAD_TO_DEG
 
+#ifndef MATH_EPSILON_3
+	#define MATH_EPSILON_3 (1.0E-3)
+#endif // MATH_EPSILON_3
+
+#ifndef MATH_EPSILON_6
+	#define MATH_EPSILON_6 (1.0E-6)
+#endif // MATH_EPSILON_6
+
+#ifndef MATH_EPSILON_9
+	#define MATH_EPSILON_9 (1.0E-9)
+#endif // MATH_EPSILON_9
+
+#ifndef MATH_EPSILON_12
+	#define MATH_EPSILON_12 (1.0E-12)
+#endif // MATH_EPSILON_12
+
+#ifndef MATH_EPSILON_15
+	#define MATH_EPSILON_15 (1.0E-15)
+#endif // MATH_EPSILON_15
+
 #endif // VEGA_CORE_MATH_CONSTANTS_H

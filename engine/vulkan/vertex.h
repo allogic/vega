@@ -12,7 +12,7 @@ typedef struct _pbr_vertex_t
 	vector4_t tangent;
 	vector4_t bitangent;
 	vector4_t color_channel_0;
-	vector2_t texture_channel_0;
+	vector2_t texcoord_channel_0;
 	vector2_t reserved_0;
 	vector4_t bone_indices; // TODO
 	vector4_t bone_weights; // TODO

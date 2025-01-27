@@ -67,8 +67,8 @@ asset_t* asset_loader_load_texture(asset_t* parent, char const* file_stem, char 
 // Internal API
 ///////////////////////////////////////////////////////////////
 
-void asset_loader_load_virtual_materials(asset_t* parent, struct aiScene const* assimp_scene);
-void asset_loader_load_virtual_meshes(asset_t* parent, struct aiScene const* assimp_scene);
+void asset_loader_load_materials(asset_t* parent, struct aiScene const* assimp_scene);
+void asset_loader_load_meshes(asset_t* parent, struct aiScene const* assimp_scene);
 
 void asset_loader_print_stats(struct aiScene const* assimp_scene);
 

@@ -12,6 +12,7 @@
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
 #include <vega/core/math/math.h>
+#include <vega/core/math/matrix4.h>
 #include <vega/core/math/tests.h>
 #include <vega/core/math/vector2.h>
 #include <vega/core/math/vector3.h>

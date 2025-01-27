@@ -29,10 +29,10 @@ buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPr
 	buffer_create_info.usage = usage;
 	buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	vkCreateBuffer(g_vulkan_device, &buffer_create_info, 0, &buffer.buffer);
+	vkCreateBuffer(g_vulkan_instance_device, &buffer_create_info, 0, &buffer.buffer);
 
 	VkMemoryRequirements memory_requirements;
-	vkGetBufferMemoryRequirements(g_vulkan_device, buffer.buffer, &memory_requirements);
+	vkGetBufferMemoryRequirements(g_vulkan_instance_device, buffer.buffer, &memory_requirements);
 
 	VkMemoryAllocateInfo memory_allocate_info;
 	memset(&memory_allocate_info, 0, sizeof(VkMemoryAllocateInfo));
@@ -41,8 +41,8 @@ buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPr
 	memory_allocate_info.allocationSize = memory_requirements.size;
 	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, memory_properties);
 
-	vkAllocateMemory(g_vulkan_device, &memory_allocate_info, 0, &buffer.device_memory);
-	vkBindBufferMemory(g_vulkan_device, buffer.buffer, buffer.device_memory, 0);
+	vkAllocateMemory(g_vulkan_instance_device, &memory_allocate_info, 0, &buffer.device_memory);
+	vkBindBufferMemory(g_vulkan_instance_device, buffer.buffer, buffer.device_memory, 0);
 
 	TRACY_ZONE_END
 
@@ -90,7 +90,7 @@ void vulkan_buffer_map(buffer_t* buffer)
 {
 	TRACY_ZONE_BEGIN
 
-	vkMapMemory(g_vulkan_device, buffer->device_memory, 0, buffer->size, 0, &buffer->mapped_buffer);
+	vkMapMemory(g_vulkan_instance_device, buffer->device_memory, 0, buffer->size, 0, &buffer->mapped_buffer);
 
 	TRACY_ZONE_END
 }
@@ -98,7 +98,7 @@ void vulkan_buffer_unmap(buffer_t* buffer)
 {
 	TRACY_ZONE_BEGIN
 
-	vkUnmapMemory(g_vulkan_device, buffer->device_memory);
+	vkUnmapMemory(g_vulkan_instance_device, buffer->device_memory);
 
 	buffer->mapped_buffer = 0;
 
@@ -110,12 +110,12 @@ void vulkan_buffer_free(buffer_t* buffer)
 
 	if (buffer->mapped_buffer)
 	{
-		vkUnmapMemory(g_vulkan_device, buffer->mapped_buffer);
+		vkUnmapMemory(g_vulkan_instance_device, buffer->mapped_buffer);
 	}
 
-	vkFreeMemory(g_vulkan_device, buffer->device_memory, 0);
+	vkFreeMemory(g_vulkan_instance_device, buffer->device_memory, 0);
 
-	vkDestroyBuffer(g_vulkan_device, buffer->buffer, 0);
+	vkDestroyBuffer(g_vulkan_instance_device, buffer->buffer, 0);
 
 	TRACY_ZONE_END
 }

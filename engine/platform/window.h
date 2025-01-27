@@ -140,6 +140,8 @@ extern int32_t g_platform_mouse_wheel_delta;
 ///////////////////////////////////////////////////////////////
 
 void platform_window_alloc(char const* title, uint32_t width, uint32_t height);
+void platform_window_free(void);
+
 void platform_window_poll_events(void);
 uint8_t platform_window_is_keyboard_key_pressed(keyboard_key Key);
 uint8_t platform_window_is_keyboard_key_held(keyboard_key Key);
@@ -147,6 +149,11 @@ uint8_t platform_window_is_keyboard_key_released(keyboard_key Key);
 uint8_t platform_window_is_mouse_key_pressed(mouse_key Key);
 uint8_t platform_window_is_mouse_key_held(mouse_key Key);
 uint8_t platform_window_is_mouse_key_released(mouse_key Key);
-void platform_window_free(void);
+
+///////////////////////////////////////////////////////////////
+// Internal API
+///////////////////////////////////////////////////////////////
+
+void platform_window_resize(uint32_t width, uint32_t height);
 
 #endif // VEGA_ENGINE_PLATFORM_WINDOW_H

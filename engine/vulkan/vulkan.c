@@ -16,7 +16,7 @@ int32_t vulkan_find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags memo
 	int32_t memory_type = -1;
 
 	VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
-	vkGetPhysicalDeviceMemoryProperties(g_vulkan_physical_device, &physical_device_memory_properties);
+	vkGetPhysicalDeviceMemoryProperties(g_vulkan_instance_physical_device, &physical_device_memory_properties);
 
 	uint32_t memory_type_index = 0;
 	while (memory_type_index < physical_device_memory_properties.memoryTypeCount)
@@ -27,6 +27,8 @@ int32_t vulkan_find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags memo
 
 			break;
 		}
+
+		memory_type_index++;
 	}
 
 	TRACY_ZONE_END
