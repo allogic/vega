@@ -122,7 +122,7 @@ typedef enum _mouse_key
 	MOUSE_KEY_RIGHT,
 } mouse_key;
 
-extern void* g_platform_module_handle;
+extern void* g_platform_window_module_handle;
 extern void* g_platform_window_handle;
 
 extern uint8_t g_platform_window_should_close;
@@ -130,10 +130,13 @@ extern uint8_t g_platform_window_should_close;
 extern int32_t g_platform_window_width;
 extern int32_t g_platform_window_height;
 
-extern int32_t g_platform_mouse_position_x;
-extern int32_t g_platform_mouse_position_y;
+extern int32_t g_platform_window_mouse_position_x;
+extern int32_t g_platform_window_mouse_position_y;
 
-extern int32_t g_platform_mouse_wheel_delta;
+extern int32_t g_platform_window_mouse_wheel_delta;
+
+extern double g_platform_window_time;
+extern double g_platform_window_delta_time;
 
 ///////////////////////////////////////////////////////////////
 // Public API
@@ -142,7 +145,12 @@ extern int32_t g_platform_mouse_wheel_delta;
 void platform_window_alloc(char const* title, uint32_t width, uint32_t height);
 void platform_window_free(void);
 
+void platform_window_begin_frame(void);
 void platform_window_poll_events(void);
+void platform_window_render_frame(void);
+void platform_window_end_frame(void);
+uint8_t platform_window_should_not_close(void);
+
 uint8_t platform_window_is_keyboard_key_pressed(keyboard_key Key);
 uint8_t platform_window_is_keyboard_key_held(keyboard_key Key);
 uint8_t platform_window_is_keyboard_key_released(keyboard_key Key);

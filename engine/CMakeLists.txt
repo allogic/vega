@@ -3,6 +3,8 @@ file (GLOB SRC_FILES "*.c")
 add_library (engine STATIC ${SRC_FILES})
 
 add_subdirectory (asset)
+add_subdirectory (component)
+add_subdirectory (entity)
 add_subdirectory (platform)
 add_subdirectory (vulkan)
 

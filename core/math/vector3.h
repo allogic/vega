@@ -13,6 +13,14 @@
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
 
+extern vector3_t const g_world_right;
+extern vector3_t const g_world_up;
+extern vector3_t const g_world_front;
+
+extern vector3_t const g_world_left;
+extern vector3_t const g_world_down;
+extern vector3_t const g_world_back;
+
 ///////////////////////////////////////////////////////////////
 // Inline Definition
 ///////////////////////////////////////////////////////////////

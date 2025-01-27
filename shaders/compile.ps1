@@ -1,2 +1,2 @@
-glslc pbr.vert -o pbr.vert.spv
-glslc pbr.frag -o pbr.frag.spv
+glslangValidator -V pbr.vert -o pbr.vert.spv
+glslangValidator -V pbr.frag -o pbr.frag.spv

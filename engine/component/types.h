@@ -1,0 +1,10 @@
+#ifndef VEGA_ENGINE_COMPONENT_TYPE_H
+#define VEGA_ENGINE_COMPONENT_TYPE_H
+
+typedef enum _component_type_t
+{
+	COMPONENT_TYPE_TRANSFORM,
+	COMPONENT_TYPE_CAMERA,
+} component_type_t;
+
+#endif // VEGA_ENGINE_COMPONENT_TYPE_H

@@ -20,9 +20,8 @@ typedef struct _screen_info_t
 
 typedef struct _projection_info_t
 {
-	void* dummy;
-	// matrix4_t view; // TODO
-	// matrix4_t projection; // TODO
+	matrix4_t view;
+	matrix4_t projection;
 } projection_info_t;
 
 ///////////////////////////////////////////////////////////////
@@ -44,6 +43,9 @@ void vulkan_renderer_command_buffer_alloc(void);
 void vulkan_renderer_sync_objects_alloc(void);
 void vulkan_renderer_render_pass_alloc(void);
 void vulkan_renderer_frame_buffer_alloc(void);
+
+void vulkan_renderer_build_graphic_command_buffer(void);
+void vulkan_renderer_build_compute_command_buffer(void);
 
 void vulkan_renderer_command_buffer_free(void);
 void vulkan_renderer_sync_objects_free(void);

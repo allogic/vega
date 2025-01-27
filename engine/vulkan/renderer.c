@@ -1,5 +1,13 @@
 #include <string.h>
 
+#include <vega/engine/scene.h>
+
+#include <vega/engine/component/camera.h>
+#include <vega/engine/component/transform.h>
+#include <vega/engine/component/types.h>
+
+#include <vega/engine/platform/window.h>
+
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/instance.h>
 #include <vega/engine/vulkan/swap_chain.h>
@@ -12,6 +20,8 @@
 #ifndef TRACY_ZONE_END
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
+
+static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
 
 static time_info_t s_vulkan_renderer_time_info = { 0 };
 static screen_info_t s_vulkan_renderer_screen_info = { 0 };
@@ -46,6 +56,87 @@ void vulkan_renderer_alloc(void)
 void vulkan_renderer_render(void)
 {
 	TRACY_ZONE_BEGIN
+
+	vkResetFences(g_vulkan_instance_device, 1, &s_vulkan_renderer_render_fence);
+
+	// TODO
+	//gRenderer->mTimeInfo.Time = gWindow->GetTime();
+	//gRenderer->mTimeInfo.DeltaTime = gWindow->GetDeltaTime();
+
+	// TODO
+	//gRenderer->mScreenInfo.Size = R32V2{ (R32)gWindow->GetWindowWidth(), (R32)gWindow->GetWindowHeight() };
+
+	scene_t* scene = scene_current();
+
+	if (scene)
+	{
+		vector_t view = std_ecs_all(&scene->ecs, (1 << COMPONENT_TYPE_TRANSFORM) | (1 << COMPONENT_TYPE_CAMERA));
+
+		std_ecs_for(&scene->ecs, &view, vulkan_renderer_update_projection_info_proc);
+	}
+
+	/*
+	gRenderer->mTimeInfoBuffer->SetMappedData(&gRenderer->mTimeInfo, sizeof(TimeInfo));
+	gRenderer->mScreenInfoBuffer->SetMappedData(&gRenderer->mScreenInfo, sizeof(ScreenInfo));
+	gRenderer->mProjectionInfoBuffer->SetMappedData(&gRenderer->mProjectionInfo, sizeof(ProjectionInfo));
+
+	U32 imageIndex;
+	VK_CHECK(vkAcquireNextImageKHR(gWindow->GetDevice(), gWindow->GetSwapChain(), UINT64_MAX, gRenderer->mImageAvailableSemaphore, 0, &imageIndex));
+
+	gRenderer->BuildComputeCommandBuffer(Scene);
+	gRenderer->BuildGraphicCommandBuffer(Scene, imageIndex);
+
+	{
+		std::vector<VkSemaphore> signalSemaphores = { gRenderer->mComputeCompleteSemaphore };
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitSemaphores = 0;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+		submitInfo.signalSemaphoreCount = (U32)signalSemaphores.size();
+		submitInfo.pWaitDstStageMask = 0;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &gRenderer->mComputeCommandBuffer;
+
+		VK_CHECK(vkQueueSubmit(gWindow->GetComputeQueue(), 1, &submitInfo, 0));
+	}
+
+	{
+		std::vector<VkSemaphore> waitSemaphores = { gRenderer->mComputeCompleteSemaphore, gRenderer->mImageAvailableSemaphore };
+		std::vector<VkSemaphore> signalSemaphores = { gRenderer->mGraphicCompleteSemaphore };
+		std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitSemaphores = waitSemaphores.data();
+		submitInfo.waitSemaphoreCount = (U32)waitSemaphores.size();
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+		submitInfo.signalSemaphoreCount = (U32)signalSemaphores.size();
+		submitInfo.pWaitDstStageMask = waitStages.data();
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &gRenderer->mGraphicCommandBuffer;
+
+		VK_CHECK(vkQueueSubmit(gWindow->GetGraphicQueue(), 1, &submitInfo, gRenderer->mRenderFence));
+	}
+
+	VK_CHECK(vkWaitForFences(gWindow->GetDevice(), 1, &gRenderer->mRenderFence, VK_TRUE, UINT64_MAX));
+
+	{
+		std::vector<VkSemaphore> waitSemaphores = { gRenderer->mGraphicCompleteSemaphore };
+		std::vector<VkSwapchainKHR> swapChains = { gWindow->GetSwapChain() };
+
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.pWaitSemaphores = waitSemaphores.data();
+		presentInfo.waitSemaphoreCount = (U32)waitSemaphores.size();
+		presentInfo.pSwapchains = swapChains.data();
+		presentInfo.swapchainCount = (U32)swapChains.size();
+		presentInfo.pImageIndices = &imageIndex;
+
+		VK_CHECK(vkQueuePresentKHR(gWindow->GetPresentQueue(), &presentInfo));
+	}
+	*/
 
 	TRACY_ZONE_END
 }
@@ -230,6 +321,14 @@ void vulkan_renderer_frame_buffer_alloc(void)
 
 	TRACY_ZONE_END
 }
+void vulkan_renderer_build_graphic_command_buffer(void)
+{
+
+}
+void vulkan_renderer_build_compute_command_buffer(void)
+{
+
+}
 void vulkan_renderer_command_buffer_free(void)
 {
 	TRACY_ZONE_BEGIN
@@ -269,6 +368,34 @@ void vulkan_renderer_frame_buffer_free(void)
 		vkDestroyFramebuffer(g_vulkan_instance_device, *(VkFramebuffer*)std_vector_at(&s_vulkan_renderer_frame_buffers, swap_chain_image_index), 0);
 
 		swap_chain_image_index++;
+	}
+
+	TRACY_ZONE_END
+}
+static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+{
+	TRACY_ZONE_BEGIN
+
+	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, COMPONENT_TYPE_TRANSFORM, view);
+	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, COMPONENT_TYPE_CAMERA, view);
+
+	switch (camera->mode)
+	{
+		case CAMERA_MODE_ORTHO:
+		{
+			// TODO
+
+			break;
+		}
+		case CAMERA_MODE_PERSP:
+		{
+			// TODO
+
+			//s_vulkan_renderer_projection_info.view = math_matrix4_look_at(transform->world_position, transform->world_position + transform->local_front, g_world_up);
+			s_vulkan_renderer_projection_info.projection = math_matrix4_persp(camera->fov, (double)g_platform_window_width / (double)g_platform_window_height, camera->near_z, camera->far_z);
+
+			break;
+		}
 	}
 
 	TRACY_ZONE_END

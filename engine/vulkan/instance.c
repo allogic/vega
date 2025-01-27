@@ -159,7 +159,7 @@ void vulkan_instance_surface_alloc()
 
 	surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surface_create_info.hwnd = g_platform_window_handle;
-	surface_create_info.hinstance = g_platform_module_handle;
+	surface_create_info.hinstance = g_platform_window_module_handle;
 
 	vkCreateWin32SurfaceKHR(g_vulkan_instance, &surface_create_info, 0, &g_vulkan_instance_surface);
 

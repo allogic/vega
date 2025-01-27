@@ -11,8 +11,8 @@ layout (location = 7) in vec4 vertex_bone_weights;
 
 layout (binding = 0) uniform time_info_t
 {
-	float time;
-	float delta_time;
+	double time;
+	double delta_time;
 } time_info;
 
 layout (binding = 1) uniform projection_info_t

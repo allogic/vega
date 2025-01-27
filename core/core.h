@@ -3,8 +3,8 @@
 
 #include <vega/core/heap.h>
 #include <vega/core/macros.h>
+#include <vega/core/timer.h>
 
-#include <vega/core/debug/timer.h>
 #include <vega/core/debug/tracy.h>
 
 #include <vega/core/fs/fs.h>
