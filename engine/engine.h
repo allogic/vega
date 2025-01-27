@@ -7,6 +7,8 @@
 
 #include <vega/engine/platform/window.h>
 
+#include <vega/engine/renderer/vertex.h>
+
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/command_buffer.h>
 #include <vega/engine/vulkan/forward.h>

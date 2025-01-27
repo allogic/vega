@@ -5,7 +5,7 @@
 #include <vega/engine/vulkan/swap_chain.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END

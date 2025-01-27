@@ -30,7 +30,11 @@ enum TracyPlotFormatEnum
 
 TRACY_API void ___tracy_set_thread_name( const char* name );
 
+#ifdef TRACY_ENABLE
 #define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
+#else
+#define TracyCSetThreadName( name )
+#endif
 
 #ifndef TracyFunction
 #  define TracyFunction __FUNCTION__

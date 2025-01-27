@@ -80,11 +80,7 @@ uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void cons
 
 		curr->next = map->table[hash];
 		curr->key = (uint8_t*)heap_alloc(key_size);
-
-		if (value)
-		{
-			curr->value = (uint8_t*)heap_alloc(value_size);
-		}
+		curr->value = (uint8_t*)heap_alloc(value_size);
 
 		curr->key_size = key_size;
 		memcpy(curr->key, key, key_size);

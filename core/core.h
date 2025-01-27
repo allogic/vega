@@ -25,6 +25,7 @@
 #include <vega/core/std/set.h>
 #include <vega/core/std/string.h>
 #include <vega/core/std/vector.h>
+#include <vega/core/std/fvector32.h>
 #include <vega/core/std/fvector64.h>
 
 #endif // VEGA_CORE_H

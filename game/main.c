@@ -5,7 +5,7 @@
 #include <vega/engine/engine.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END
@@ -21,8 +21,6 @@ int main(int argc, char** argv, char** envp)
 	TRACY_ZONE_BEGIN
 
 	VEGA_MATH_TESTS
-
-	asset_loader_load("C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
 
 	s_ecs = std_ecs_alloc();
 
@@ -63,8 +61,16 @@ int main(int argc, char** argv, char** envp)
 
 	platform_window_alloc("VEGA", 1920, 1080);
 	
-	vulkan_instance_alloc();
-	vulkan_swap_chain_alloc();
+	asset_loader_alloc();
+
+	asset_t* cyberdemon_model = asset_loader_load_model(0, "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
+	asset_t* cockpit_model = asset_loader_load_model(0, "cockpit", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit\\cockpit2.fbx");
+
+	//WaitForSingleObject(s_asset_mutex_handle, INFINITE);
+	//ReleaseMutex(s_asset_mutex_handle);
+
+	//vulkan_instance_alloc();
+	//vulkan_swap_chain_alloc();
 
 	while (g_platform_window_should_close == 0)
 	{
@@ -75,8 +81,10 @@ int main(int argc, char** argv, char** envp)
 		//Sleep(10);
 	}
 
-	vulkan_swap_chain_free();
-	vulkan_instance_free();
+	//vulkan_swap_chain_free();
+	//vulkan_instance_free();
+
+	asset_loader_free();
 
 	platform_window_free();
 

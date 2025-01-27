@@ -1,6 +1,12 @@
 #ifndef VEGA_CORE_MACROS_H
 #define VEGA_CORE_MACROS_H
 
+// TODO: rename macros to VEGA_
+
+#ifndef VEGA_ASSERT
+	#define VEGA_ASSERT(EXPRESSION, MESSAGE) (assert((EXPRESSION) && MESSAGE))
+#endif // VEGA_ASSERT
+
 #ifndef ARRAY_COUNT
 	#define ARRAY_COUNT(ARRAY) ((uint64_t)(sizeof(ARRAY) / sizeof((ARRAY)[0])))
 #endif // ARRAY_COUNT

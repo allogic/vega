@@ -7,7 +7,7 @@
 #include <vega/core/fs/fs.h>
 
 #ifndef TRACY_ZONE_BEGIN
-	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_BLUE, 1U);
+	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_RED, 1U);
 #endif // TRACY_ZONE_BEGIN
 
 #ifndef TRACY_ZONE_END
@@ -119,4 +119,76 @@ uint8_t fs_write_binary(uint8_t* buffer, uint64_t buffer_size, char const* file_
 	TRACY_ZONE_END
 
 	return written;
+}
+string_t fs_resolve_file_stem_from_path(char const* file_path, uint64_t file_path_size)
+{
+	TRACY_ZONE_BEGIN
+
+	uint64_t dot_marker = 0;
+
+	uint64_t file_path_index = file_path_size;
+	while (file_path_index >= 0)
+	{
+		if (file_path[file_path_index] == '.')
+		{
+			dot_marker = file_path_index;
+		}
+
+		if (file_path[file_path_index] == '\\' || file_path[file_path_index] == '/')
+		{
+			break;
+		}
+
+		file_path_index--;
+	}
+
+	string_t string = std_string_from(file_path + file_path_index + 1, dot_marker - file_path_index - 1);
+
+	TRACY_ZONE_END
+
+	return string;
+}
+string_t fs_resolve_file_ext_from_path(char const* file_path, uint64_t file_path_size)
+{
+	TRACY_ZONE_BEGIN
+
+	uint64_t dot_marker = 0;
+
+	uint64_t file_path_index = file_path_size;
+	while (file_path_index >= 0)
+	{
+		if (file_path[file_path_index] == '.')
+		{
+			break;
+		}
+
+		file_path_index--;
+	}
+
+	string_t string = std_string_from(file_path + file_path_index + 1, file_path_size - file_path_index - 1);
+
+	TRACY_ZONE_END
+
+	return string;
+}
+string_t fs_resolve_file_root_from_path(char const* file_path, uint64_t file_path_size)
+{
+	TRACY_ZONE_BEGIN
+
+	uint64_t file_path_index = file_path_size;
+	while (file_path_index >= 0)
+	{
+		if (file_path[file_path_index] == '\\' || file_path[file_path_index] == '/')
+		{
+			break;
+		}
+
+		file_path_index--;
+	}
+
+	string_t string = std_string_from(file_path, file_path_index - 1);
+
+	TRACY_ZONE_END
+
+	return string;
 }
