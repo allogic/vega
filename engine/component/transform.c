@@ -10,27 +10,30 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
-void transform_init(transform_t* transform)
+transform_t transform_identity(void)
 {
 	TRACY_ZONE_BEGIN
 
-	memset(transform, 0, sizeof(transform_t));
+	transform_t transform;
+	memset(&transform, 0, sizeof(transform_t));
 
-	transform->parent = 0;
-	transform->local_right = math_vector3_from_xyz(1.0, 0.0, 0.0);
-	transform->local_up = math_vector3_from_xyz(0.0, 1.0, 0.0);
-	transform->local_front = math_vector3_from_xyz(0.0, 0.0, 1.0);
-	transform->local_left = math_vector3_from_xyz(-1.0, 0.0, 0.0);
-	transform->local_down = math_vector3_from_xyz(0.0, -1.0, 0.0);
-	transform->local_back = math_vector3_from_xyz(0.0, 0.0, -1.0);
-	transform->local_position = math_vector3_from_xyz(0.0, 0.0, 0.0);
-	transform->local_rotation = math_quaternion_identity();
-	transform->local_scale = math_vector3_from_xyz(1.0, 1.0, 1.0);
-	transform->world_position = math_vector3_from_xyz(0.0, 0.0, 0.0);
-	transform->world_rotation = math_quaternion_identity();
-	transform->world_scale = math_vector3_from_xyz(1.0, 1.0, 1.0);
+	transform.parent = 0;
+	transform.local_right = g_world_right;
+	transform.local_up = g_world_up;
+	transform.local_front = g_world_front;
+	transform.local_left = g_world_left;
+	transform.local_down = g_world_down;
+	transform.local_back = g_world_back;
+	transform.local_position = math_vector3_zero();
+	transform.local_rotation = math_quaternion_identity();
+	transform.local_scale = math_vector3_one();
+	transform.world_position = math_vector3_zero();
+	transform.world_rotation = math_quaternion_identity();
+	transform.world_scale = math_vector3_one();
 
 	TRACY_ZONE_END
+
+	return transform;
 }
 void transform_set_position(transform_t* transform, vector3_t position)
 {

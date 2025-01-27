@@ -47,6 +47,7 @@ __forceinline double math_rad_to_deg(double a);
 __forceinline double math_fast_inverse_sqrt(double a);
 
 __forceinline vector2_t math_vector2_zero(void);
+__forceinline vector2_t math_vector2_one(void);
 __forceinline vector2_t math_vector2_from_xy(double x, double y);
 __forceinline vector2_t math_vector2_add(vector2_t a, vector2_t b);
 __forceinline vector2_t math_vector2_sub(vector2_t a, vector2_t b);
@@ -62,6 +63,7 @@ __forceinline double math_vector2_length(vector2_t a);
 __forceinline double math_vector2_length2(vector2_t a);
 
 __forceinline vector3_t math_vector3_zero(void);
+__forceinline vector3_t math_vector3_one(void);
 __forceinline vector3_t math_vector3_from_xyz(double x, double y, double z);
 __forceinline vector3_t math_vector3_add(vector3_t a, vector3_t b);
 __forceinline vector3_t math_vector3_sub(vector3_t a, vector3_t b);
@@ -79,6 +81,7 @@ __forceinline double math_vector3_length(vector3_t a);
 __forceinline double math_vector3_length2(vector3_t a);
 
 __forceinline vector4_t math_vector4_zero(void);
+__forceinline vector4_t math_vector4_one(void);
 __forceinline vector4_t math_vector4_from_xyzw(double x, double y, double z, double w);
 __forceinline vector4_t math_vector4_add(vector4_t a, vector4_t b);
 __forceinline vector4_t math_vector4_sub(vector4_t a, vector4_t b);

@@ -29,6 +29,18 @@ __forceinline vector4_t math_vector4_zero(void)
 
 	return r;
 }
+__forceinline vector4_t math_vector4_one(void)
+{
+	vector4_t r =
+	{
+		.x = 1.0,
+		.y = 1.0,
+		.z = 1.0,
+		.w = 1.0,
+	};
+
+	return r;
+}
 __forceinline vector4_t math_vector4_from_xyzw(double x, double y, double z, double w)
 {
 	vector4_t r =

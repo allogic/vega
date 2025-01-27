@@ -29,6 +29,13 @@ void math_tests()
 		}
 
 		{
+			vector2_t c = math_vector2_one();
+
+			ASSERT_VALUE(c.x, 1.0);
+			ASSERT_VALUE(c.y, 1.0);
+		}
+
+		{
 			vector2_t c = math_vector2_from_xy(1.0, 2.0);
 
 			ASSERT_VALUE(c.x, 1.0);
@@ -141,6 +148,14 @@ void math_tests()
 			ASSERT_VALUE(c.x, 0.0);
 			ASSERT_VALUE(c.y, 0.0);
 			ASSERT_VALUE(c.z, 0.0);
+		}
+
+		{
+			vector3_t c = math_vector3_one();
+
+			ASSERT_VALUE(c.x, 1.0);
+			ASSERT_VALUE(c.y, 1.0);
+			ASSERT_VALUE(c.z, 1.0);
 		}
 
 		{
@@ -306,6 +321,15 @@ void math_tests()
 			ASSERT_VALUE(c.y, 0.0);
 			ASSERT_VALUE(c.z, 0.0);
 			ASSERT_VALUE(c.w, 0.0);
+		}
+
+		{
+			vector4_t c = math_vector4_one();
+
+			ASSERT_VALUE(c.x, 1.0);
+			ASSERT_VALUE(c.y, 1.0);
+			ASSERT_VALUE(c.z, 1.0);
+			ASSERT_VALUE(c.w, 1.0);
 		}
 
 		{

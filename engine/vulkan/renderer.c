@@ -27,6 +27,10 @@ static time_info_t s_vulkan_renderer_time_info = { 0 };
 static screen_info_t s_vulkan_renderer_screen_info = { 0 };
 static projection_info_t s_vulkan_renderer_projection_info = { 0 };
 
+static buffer_t s_vulkan_renderer_time_info_buffer = { 0 };
+static buffer_t s_vulkan_renderer_screen_info_buffer = { 0 };
+static buffer_t s_vulkan_renderer_projection_info_buffer = { 0 };
+
 static VkCommandBuffer s_vulkan_renderer_graphic_command_buffer = 0;
 static VkCommandBuffer s_vulkan_renderer_compute_command_buffer = 0;
 
@@ -45,6 +49,10 @@ void vulkan_renderer_alloc(void)
 	TRACY_ZONE_BEGIN
 
 	s_vulkan_renderer_frame_buffers = std_vector_alloc(sizeof(VkFramebuffer));
+
+	s_vulkan_renderer_time_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(time_info_t));
+	s_vulkan_renderer_screen_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(screen_info_t));
+	s_vulkan_renderer_projection_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(projection_info_t));
 
 	vulkan_renderer_command_buffer_alloc();
 	vulkan_renderer_sync_objects_alloc();
@@ -73,6 +81,8 @@ void vulkan_renderer_render(void)
 		vector_t view = std_ecs_all(&scene->ecs, (1 << COMPONENT_TYPE_TRANSFORM) | (1 << COMPONENT_TYPE_CAMERA));
 
 		std_ecs_for(&scene->ecs, &view, vulkan_renderer_update_projection_info_proc);
+
+		std_vector_free(&view); // TODO: create this view only if the scene is dirty..
 	}
 
 	/*
@@ -148,6 +158,10 @@ void vulkan_renderer_free(void)
 	vulkan_renderer_render_pass_free();
 	vulkan_renderer_sync_objects_free();
 	vulkan_renderer_command_buffer_free();
+
+	vulkan_buffer_free(&s_vulkan_renderer_projection_info_buffer);
+	vulkan_buffer_free(&s_vulkan_renderer_screen_info_buffer);
+	vulkan_buffer_free(&s_vulkan_renderer_time_info_buffer);
 
 	std_vector_free(&s_vulkan_renderer_frame_buffers);
 

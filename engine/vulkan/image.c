@@ -24,13 +24,13 @@ image_t vulkan_image_2d_r_alloc(void* buffer, uint32_t width, uint32_t height, V
 	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
 	vulkan_buffer_unmap(&staging_buffer);
 
-	image_t image = vulkan_image_alloc(width, height, 1, 1, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
+	image_t target_image = vulkan_image_alloc(width, height, 1, 1, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
 
 	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
 
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vulkan_buffer_copy_to_image(&staging_buffer, &image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vulkan_buffer_copy_to_image(&staging_buffer, &target_image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
 	vulkan_command_buffer_end(command_buffer);
 
@@ -38,7 +38,7 @@ image_t vulkan_image_2d_r_alloc(void* buffer, uint32_t width, uint32_t height, V
 
 	TRACY_ZONE_END
 
-	return image;
+	return target_image;
 }
 image_t vulkan_image_2d_rg_alloc(void* buffer, uint32_t width, uint32_t height, VkFormat format)
 {
@@ -50,13 +50,13 @@ image_t vulkan_image_2d_rg_alloc(void* buffer, uint32_t width, uint32_t height, 
 	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
 	vulkan_buffer_unmap(&staging_buffer);
 
-	image_t image = vulkan_image_alloc(width, height, 1, 2, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
+	image_t target_image = vulkan_image_alloc(width, height, 1, 2, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
 
 	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
 
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vulkan_buffer_copy_to_image(&staging_buffer, &image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vulkan_buffer_copy_to_image(&staging_buffer, &target_image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
 	vulkan_command_buffer_end(command_buffer);
 
@@ -64,7 +64,7 @@ image_t vulkan_image_2d_rg_alloc(void* buffer, uint32_t width, uint32_t height, 
 
 	TRACY_ZONE_END
 
-	return image;
+	return target_image;
 }
 image_t vulkan_image_2d_rgb_alloc(void* buffer, uint32_t width, uint32_t height, VkFormat format)
 {
@@ -76,13 +76,13 @@ image_t vulkan_image_2d_rgb_alloc(void* buffer, uint32_t width, uint32_t height,
 	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
 	vulkan_buffer_unmap(&staging_buffer);
 
-	image_t image = vulkan_image_alloc(width, height, 1, 3, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
+	image_t target_image = vulkan_image_alloc(width, height, 1, 3, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
 
 	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
 
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vulkan_buffer_copy_to_image(&staging_buffer, &image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vulkan_buffer_copy_to_image(&staging_buffer, &target_image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
 	vulkan_command_buffer_end(command_buffer);
 
@@ -90,7 +90,7 @@ image_t vulkan_image_2d_rgb_alloc(void* buffer, uint32_t width, uint32_t height,
 
 	TRACY_ZONE_END
 
-	return image;
+	return target_image;
 }
 image_t vulkan_image_2d_rgba_alloc(void* buffer, uint32_t width, uint32_t height, VkFormat format)
 {
@@ -102,13 +102,13 @@ image_t vulkan_image_2d_rgba_alloc(void* buffer, uint32_t width, uint32_t height
 	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
 	vulkan_buffer_unmap(&staging_buffer);
 
-	image_t image = vulkan_image_alloc(width, height, 1, 4, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
+	image_t target_image = vulkan_image_alloc(width, height, 1, 4, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
 
 	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
 
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vulkan_buffer_copy_to_image(&staging_buffer, &image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
-	vulkan_image_layout_transition(&image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vulkan_buffer_copy_to_image(&staging_buffer, &target_image, command_buffer, width, height, 1, VK_IMAGE_ASPECT_COLOR_BIT);
+	vulkan_image_layout_transition(&target_image, command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
 	vulkan_command_buffer_end(command_buffer);
 
@@ -116,17 +116,17 @@ image_t vulkan_image_2d_rgba_alloc(void* buffer, uint32_t width, uint32_t height
 
 	TRACY_ZONE_END
 
-	return image;
+	return target_image;
 }
 image_t vulkan_image_2d_depth_alloc(uint32_t width, uint32_t height, VkFormat format)
 {
 	TRACY_ZONE_BEGIN
 
-	image_t image = vulkan_image_alloc(width, height, 1, 1, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
+	image_t target_image = vulkan_image_alloc(width, height, 1, 1, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_FILTER_NEAREST);
 
 	TRACY_ZONE_END
 
-	return image;
+	return target_image;
 }
 image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint32_t channels, VkImageType type, VkImageViewType view_type, VkImageUsageFlags usage, VkMemoryPropertyFlags memory_properties, VkImageAspectFlags aspect_flags, VkFormat format, VkImageTiling tiling, VkFilter filter)
 {
@@ -218,6 +218,23 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	TRACY_ZONE_END
 
 	return image;
+}
+void vulkan_image_free(image_t* image)
+{
+	TRACY_ZONE_BEGIN
+
+	if (image->mapped_buffer)
+	{
+		vkUnmapMemory(g_vulkan_instance_device, image->device_memory);
+	}
+
+	vkFreeMemory(g_vulkan_instance_device, image->device_memory, 0);
+
+	vkDestroySampler(g_vulkan_instance_device, image->sampler, 0);
+	vkDestroyImageView(g_vulkan_instance_device, image->image_view, 0);
+	vkDestroyImage(g_vulkan_instance_device, image->image, 0);
+
+	TRACY_ZONE_END
 }
 void vulkan_image_copy_to_image(image_t* image, image_t* target, VkCommandBuffer command_buffer)
 {
@@ -350,23 +367,6 @@ void vulkan_image_unmap(image_t* image)
 	vkUnmapMemory(g_vulkan_instance_device, image->device_memory);
 
 	image->mapped_buffer = 0;
-
-	TRACY_ZONE_END
-}
-void vulkan_image_free(image_t* image)
-{
-	TRACY_ZONE_BEGIN
-
-	if (image->mapped_buffer)
-	{
-		vkUnmapMemory(g_vulkan_instance_device, image->device_memory);
-	}
-
-	vkFreeMemory(g_vulkan_instance_device, image->device_memory, 0);
-
-	vkDestroySampler(g_vulkan_instance_device, image->sampler, 0);
-	vkDestroyImageView(g_vulkan_instance_device, image->image_view, 0);
-	vkDestroyImage(g_vulkan_instance_device, image->image, 0);
 
 	TRACY_ZONE_END
 }

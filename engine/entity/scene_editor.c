@@ -8,8 +8,7 @@ uint64_t entity_scene_editor_create(ecs_t* ecs)
 {
 	uint64_t entity = std_ecs_create(ecs);
 
-	transform_t transform;
-	transform_init(&transform);
+	transform_t transform = transform_identity();
 
 	camera_t camera =
 	{

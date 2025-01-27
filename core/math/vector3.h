@@ -36,6 +36,17 @@ __forceinline vector3_t math_vector3_zero(void)
 
 	return r;
 }
+__forceinline vector3_t math_vector3_one(void)
+{
+	vector3_t r =
+	{
+		.x = 1.0,
+		.y = 1.0,
+		.z = 1.0,
+	};
+
+	return r;
+}
 __forceinline vector3_t math_vector3_from_xyz(double x, double y, double z)
 {
 	vector3_t r =

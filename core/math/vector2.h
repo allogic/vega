@@ -27,6 +27,16 @@ __forceinline vector2_t math_vector2_zero(void)
 
 	return r;
 }
+__forceinline vector2_t math_vector2_one(void)
+{
+	vector2_t r =
+	{
+		.x = 1.0,
+		.y = 1.0,
+	};
+
+	return r;
+}
 __forceinline vector2_t math_vector2_from_xy(double x, double y)
 {
 	vector2_t r =

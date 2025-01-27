@@ -31,6 +31,11 @@ void scene_stack_free(void)
 {
 	TRACY_ZONE_BEGIN
 
+	while (std_vector_count(&g_scene_stack) > 0)
+	{
+		scene_pop();
+	}
+
 	std_vector_free(&g_scene_stack);
 
 	TRACY_ZONE_END
@@ -58,7 +63,6 @@ void scene_pop(void)
 	TRACY_ZONE_BEGIN
 
 	scene_t scene;
-
 	std_vector_pop(&g_scene_stack, &scene);
 
 	std_ecs_free(&scene.ecs);
@@ -69,7 +73,12 @@ scene_t* scene_current(void)
 {
 	TRACY_ZONE_BEGIN
 
-	scene_t* current = std_vector_back(&g_scene_stack);
+	scene_t* current = 0;
+
+	if (std_vector_count(&g_scene_stack) > 0)
+	{
+		current = std_vector_back(&g_scene_stack);
+	}
 
 	TRACY_ZONE_END
 

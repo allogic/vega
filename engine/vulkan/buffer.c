@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include <vega/engine/vulkan/buffer.h>
+#include <vega/engine/vulkan/command_buffer.h>
 #include <vega/engine/vulkan/instance.h>
 #include <vega/engine/vulkan/vulkan.h>
 
@@ -12,6 +13,150 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
+buffer_t vulkan_buffer_vertex_alloc(void* buffer, uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t staging_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&staging_buffer);
+	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
+	vulkan_buffer_unmap(&staging_buffer);
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
+
+	vulkan_buffer_copy_to_buffer(&staging_buffer, &target_buffer, command_buffer);
+
+	vulkan_command_buffer_end(command_buffer);
+
+	vulkan_buffer_free(&staging_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_index_alloc(void* buffer, uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t staging_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&staging_buffer);
+	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
+	vulkan_buffer_unmap(&staging_buffer);
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
+
+	vulkan_buffer_copy_to_buffer(&staging_buffer, &target_buffer, command_buffer);
+
+	vulkan_command_buffer_end(command_buffer);
+
+	vulkan_buffer_free(&staging_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_uniform_alloc(void* buffer, uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t staging_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&staging_buffer);
+	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
+	vulkan_buffer_unmap(&staging_buffer);
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
+
+	vulkan_buffer_copy_to_buffer(&staging_buffer, &target_buffer, command_buffer);
+
+	vulkan_command_buffer_end(command_buffer);
+
+	vulkan_buffer_free(&staging_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_storage_alloc(void* buffer, uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t staging_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&staging_buffer);
+	memcpy(staging_buffer.mapped_buffer, buffer, staging_buffer.size);
+	vulkan_buffer_unmap(&staging_buffer);
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkCommandBuffer command_buffer = vulkan_command_buffer_begin();
+
+	vulkan_buffer_copy_to_buffer(&staging_buffer, &target_buffer, command_buffer);
+
+	vulkan_command_buffer_end(command_buffer);
+
+	vulkan_buffer_free(&staging_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_vertex_coherent_alloc(uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&target_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_index_coherent_alloc(uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&target_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_uniform_coherent_alloc(uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&target_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
+buffer_t vulkan_buffer_storage_coherent_alloc(uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	buffer_t target_buffer = vulkan_buffer_alloc(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vulkan_buffer_map(&target_buffer);
+
+	TRACY_ZONE_END
+
+	return target_buffer;
+}
 buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memory_properties)
 {
 	TRACY_ZONE_BEGIN
@@ -47,6 +192,21 @@ buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPr
 	TRACY_ZONE_END
 
 	return buffer;
+}
+void vulkan_buffer_free(buffer_t* buffer)
+{
+	TRACY_ZONE_BEGIN
+
+	if (buffer->mapped_buffer)
+	{
+		vkUnmapMemory(g_vulkan_instance_device, buffer->device_memory);
+	}
+
+	vkFreeMemory(g_vulkan_instance_device, buffer->device_memory, 0);
+
+	vkDestroyBuffer(g_vulkan_instance_device, buffer->buffer, 0);
+
+	TRACY_ZONE_END
 }
 void vulkan_buffer_copy_to_buffer(buffer_t* buffer, buffer_t* target, VkCommandBuffer command_buffer)
 {
@@ -101,21 +261,6 @@ void vulkan_buffer_unmap(buffer_t* buffer)
 	vkUnmapMemory(g_vulkan_instance_device, buffer->device_memory);
 
 	buffer->mapped_buffer = 0;
-
-	TRACY_ZONE_END
-}
-void vulkan_buffer_free(buffer_t* buffer)
-{
-	TRACY_ZONE_BEGIN
-
-	if (buffer->mapped_buffer)
-	{
-		vkUnmapMemory(g_vulkan_instance_device, buffer->mapped_buffer);
-	}
-
-	vkFreeMemory(g_vulkan_instance_device, buffer->device_memory, 0);
-
-	vkDestroyBuffer(g_vulkan_instance_device, buffer->buffer, 0);
 
 	TRACY_ZONE_END
 }
