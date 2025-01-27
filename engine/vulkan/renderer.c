@@ -63,86 +63,70 @@ void vulkan_renderer_render(void)
 
 	vkResetFences(g_vulkan_instance_device, 1, &s_vulkan_renderer_render_fence);
 
-	// TODO
-	//gRenderer->mTimeInfo.Time = gWindow->GetTime();
-	//gRenderer->mTimeInfo.DeltaTime = gWindow->GetDeltaTime();
+	uint32_t image_index;
+	vkAcquireNextImageKHR(g_vulkan_instance_device, g_vulkan_swap_chain, UINT64_MAX, s_vulkan_renderer_image_available_semaphore, 0, &image_index);
 
-	// TODO
-	//gRenderer->mScreenInfo.Size = R32V2{ (R32)gWindow->GetWindowWidth(), (R32)gWindow->GetWindowHeight() };
+	vulkan_renderer_update_uniform_buffers();
 
-	scene_t* scene = scene_current();
-
-	if (scene)
-	{
-		vector_t view = std_ecs_all(&scene->ecs, (1 << COMPONENT_TYPE_TRANSFORM) | (1 << COMPONENT_TYPE_CAMERA));
-
-		std_ecs_for(&scene->ecs, &view, vulkan_renderer_update_projection_info_proc);
-
-		std_vector_free(&view); // TODO: create this view only if the scene is dirty..
-	}
-
-	/*
-	gRenderer->mTimeInfoBuffer->SetMappedData(&gRenderer->mTimeInfo, sizeof(TimeInfo));
-	gRenderer->mScreenInfoBuffer->SetMappedData(&gRenderer->mScreenInfo, sizeof(ScreenInfo));
-	gRenderer->mProjectionInfoBuffer->SetMappedData(&gRenderer->mProjectionInfo, sizeof(ProjectionInfo));
-
-	U32 imageIndex;
-	VK_CHECK(vkAcquireNextImageKHR(gWindow->GetDevice(), gWindow->GetSwapChain(), UINT64_MAX, gRenderer->mImageAvailableSemaphore, 0, &imageIndex));
-
-	gRenderer->BuildComputeCommandBuffer(Scene);
-	gRenderer->BuildGraphicCommandBuffer(Scene, imageIndex);
+	vulkan_renderer_record_compute_command_buffer();
+	vulkan_renderer_record_graphic_command_buffer(image_index);
 
 	{
-		std::vector<VkSemaphore> signalSemaphores = { gRenderer->mComputeCompleteSemaphore };
+		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_compute_complete_semaphore };
 
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitSemaphores = 0;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
-		submitInfo.signalSemaphoreCount = (U32)signalSemaphores.size();
-		submitInfo.pWaitDstStageMask = 0;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &gRenderer->mComputeCommandBuffer;
+		VkSubmitInfo submit_info;
+		memset(&submit_info, 0, sizeof(VkSubmitInfo));
 
-		VK_CHECK(vkQueueSubmit(gWindow->GetComputeQueue(), 1, &submitInfo, 0));
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.pWaitSemaphores = 0;
+		submit_info.waitSemaphoreCount = 0;
+		submit_info.pSignalSemaphores = signal_semaphores;
+		submit_info.signalSemaphoreCount = (uint32_t)ARRAY_COUNT(signal_semaphores);
+		submit_info.pWaitDstStageMask = 0;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &s_vulkan_renderer_compute_command_buffer;
+
+		vkQueueSubmit(g_vulkan_instance_compute_queue, 1, &submit_info, 0);
 	}
 
 	{
-		std::vector<VkSemaphore> waitSemaphores = { gRenderer->mComputeCompleteSemaphore, gRenderer->mImageAvailableSemaphore };
-		std::vector<VkSemaphore> signalSemaphores = { gRenderer->mGraphicCompleteSemaphore };
-		std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_compute_complete_semaphore, s_vulkan_renderer_image_available_semaphore };
+		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitSemaphores = waitSemaphores.data();
-		submitInfo.waitSemaphoreCount = (U32)waitSemaphores.size();
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
-		submitInfo.signalSemaphoreCount = (U32)signalSemaphores.size();
-		submitInfo.pWaitDstStageMask = waitStages.data();
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &gRenderer->mGraphicCommandBuffer;
+		VkSubmitInfo submit_info;
+		memset(&submit_info, 0, sizeof(VkSubmitInfo));
 
-		VK_CHECK(vkQueueSubmit(gWindow->GetGraphicQueue(), 1, &submitInfo, gRenderer->mRenderFence));
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.pWaitSemaphores = wait_semaphores;
+		submit_info.waitSemaphoreCount = (uint32_t)ARRAY_COUNT(wait_semaphores);
+		submit_info.pSignalSemaphores = signal_semaphores;
+		submit_info.signalSemaphoreCount = (uint32_t)ARRAY_COUNT(signal_semaphores);
+		submit_info.pWaitDstStageMask = wait_stages;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &s_vulkan_renderer_graphic_command_buffer;
+
+		vkQueueSubmit(g_vulkan_instance_graphic_queue, 1, &submit_info, s_vulkan_renderer_render_fence);
 	}
 
-	VK_CHECK(vkWaitForFences(gWindow->GetDevice(), 1, &gRenderer->mRenderFence, VK_TRUE, UINT64_MAX));
+	vkWaitForFences(g_vulkan_instance_device, 1, &s_vulkan_renderer_render_fence, 1, UINT64_MAX);
 
 	{
-		std::vector<VkSemaphore> waitSemaphores = { gRenderer->mGraphicCompleteSemaphore };
-		std::vector<VkSwapchainKHR> swapChains = { gWindow->GetSwapChain() };
+		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
+		VkSwapchainKHR swap_chains[] = { g_vulkan_swap_chain };
 
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.pWaitSemaphores = waitSemaphores.data();
-		presentInfo.waitSemaphoreCount = (U32)waitSemaphores.size();
-		presentInfo.pSwapchains = swapChains.data();
-		presentInfo.swapchainCount = (U32)swapChains.size();
-		presentInfo.pImageIndices = &imageIndex;
+		VkPresentInfoKHR present_info;
+		memset(&present_info, 0, sizeof(VkPresentInfoKHR));
 
-		VK_CHECK(vkQueuePresentKHR(gWindow->GetPresentQueue(), &presentInfo));
+		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		present_info.pWaitSemaphores = wait_semaphores;
+		present_info.waitSemaphoreCount = (uint32_t)ARRAY_COUNT(wait_semaphores);
+		present_info.pSwapchains = swap_chains;
+		present_info.swapchainCount = (uint32_t)ARRAY_COUNT(swap_chains);
+		present_info.pImageIndices = &image_index;
+
+		vkQueuePresentKHR(g_vulkan_instance_present_queue, &present_info);
 	}
-	*/
 
 	TRACY_ZONE_END
 }
@@ -331,13 +315,226 @@ void vulkan_renderer_frame_buffer_alloc(void)
 
 	TRACY_ZONE_END
 }
-void vulkan_renderer_build_graphic_command_buffer(void)
+void vulkan_renderer_update_uniform_buffers(void)
 {
+	TRACY_ZONE_BEGIN
 
+	scene_t* scene = scene_current();
+
+	if (scene)
+	{
+		time_info_t* time_info = (time_info_t*)s_vulkan_renderer_time_info_buffer.mapped_buffer;
+
+		time_info->time = g_platform_window_time;
+		time_info->delta_time = g_platform_window_delta_time;
+
+		screen_info_t* screen_info = (screen_info_t*)s_vulkan_renderer_screen_info_buffer.mapped_buffer;
+
+		screen_info->size.x = (double)g_platform_window_width;
+		screen_info->size.x = (double)g_platform_window_height;
+
+		vector_t view = std_ecs_all(&scene->ecs, (1 << COMPONENT_TYPE_TRANSFORM) | (1 << COMPONENT_TYPE_CAMERA));
+
+		std_ecs_for(&scene->ecs, &view, vulkan_renderer_update_projection_info_proc);
+
+		std_vector_free(&view); // TODO: create this view only if the scene is dirty..
+	}
+
+	TRACY_ZONE_END
 }
-void vulkan_renderer_build_compute_command_buffer(void)
+void vulkan_renderer_record_compute_command_buffer(void)
 {
+	TRACY_ZONE_BEGIN
 
+	vkQueueWaitIdle(g_vulkan_instance_compute_queue); // TODO
+
+	VkCommandBufferBeginInfo command_buffer_begin_info;
+	memset(&command_buffer_begin_info, 0, sizeof(VkCommandBufferBeginInfo));
+
+	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	command_buffer_begin_info.flags = 0;
+	command_buffer_begin_info.pInheritanceInfo = 0;
+
+	vkBeginCommandBuffer(s_vulkan_renderer_compute_command_buffer, &command_buffer_begin_info);
+
+	scene_t* scene = scene_current();
+
+	if (scene)
+	{
+		/* // TODO: proper compute queue syncronization with graphics queue..
+		Scene->DispatchTransformHierarchy();
+
+		for (auto const& [name, model] : Scene->GetModels())
+		{
+			Skeleton* skeleton = model->GetSkeleton();
+
+			skeleton->DispatchBoneHierarchy();
+		}
+		*/
+	}
+
+	vkEndCommandBuffer(s_vulkan_renderer_compute_command_buffer);
+
+	TRACY_ZONE_END
+}
+void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
+{
+	TRACY_ZONE_BEGIN
+
+	vkQueueWaitIdle(g_vulkan_instance_graphic_queue); // TODO
+
+	VkCommandBufferBeginInfo command_buffer_begin_info;
+	memset(&command_buffer_begin_info, 0, sizeof(VkCommandBufferBeginInfo));
+
+	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	command_buffer_begin_info.flags = 0;
+	command_buffer_begin_info.pInheritanceInfo = 0;
+
+	vkBeginCommandBuffer(s_vulkan_renderer_graphic_command_buffer, &command_buffer_begin_info);
+
+	VkClearValue color_clear_value;
+	memset(&color_clear_value, 0, sizeof(VkClearValue));
+
+	color_clear_value.color.float32[0] = 0.0F;
+	color_clear_value.color.float32[1] = 0.0F;
+	color_clear_value.color.float32[2] = 0.0F;
+	color_clear_value.color.float32[3] = 1.0F;
+
+	VkClearValue depth_clear_value;
+	memset(&depth_clear_value, 0, sizeof(VkClearValue));
+
+	depth_clear_value.depthStencil.depth = 1.0F;
+	depth_clear_value.depthStencil.stencil = 0;
+
+	VkClearValue clear_values[] = { color_clear_value, depth_clear_value };
+
+	VkRenderPassBeginInfo render_pass_create_info;
+	memset(&render_pass_create_info, 0, sizeof(VkRenderPassBeginInfo));
+
+	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	render_pass_create_info.renderPass = s_vulkan_renderer_render_pass;
+	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_at(&s_vulkan_renderer_frame_buffers, image_index);
+	render_pass_create_info.renderArea.offset.x = 0;
+	render_pass_create_info.renderArea.offset.y = 0;
+	render_pass_create_info.renderArea.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;
+	render_pass_create_info.renderArea.extent.height = g_vulkan_instance_surface_capabilities.currentExtent.height;
+	render_pass_create_info.pClearValues = clear_values;
+	render_pass_create_info.clearValueCount = (uint32_t)ARRAY_COUNT(clear_values);
+
+	VkViewport viewport;
+	memset(&viewport, 0, sizeof(VkViewport));
+
+	viewport.x = 0.0F;
+	viewport.y = 0.0F;
+	viewport.width = (float)g_vulkan_instance_surface_capabilities.currentExtent.width;
+	viewport.height = (float)g_vulkan_instance_surface_capabilities.currentExtent.height;
+	viewport.minDepth = 0.0F;
+	viewport.maxDepth = 1.0F;
+
+	VkRect2D scissor;
+	memset(&scissor, 0, sizeof(VkRect2D));
+
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;
+	scissor.extent.height = g_vulkan_instance_surface_capabilities.currentExtent.height;
+
+	vkCmdBeginRenderPass(s_vulkan_renderer_graphic_command_buffer, &render_pass_create_info, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdSetViewport(s_vulkan_renderer_graphic_command_buffer, 0, 1, &viewport);
+	vkCmdSetScissor(s_vulkan_renderer_graphic_command_buffer, 0, 1, &scissor);
+
+	scene_t* scene = scene_current();
+
+	if (scene)
+	{
+		/* // TODO
+		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPhysicallyBasedPipeline);
+
+		auto const& entities = Scene->GetEntitiesToBeRendered();
+
+		for (U32 i = 0; i < entities.size(); ++i)
+		{
+			RenderComponent* renderComponent = entities[i]->GetComponent<RenderComponent>();
+
+			if (renderComponent)
+			{
+				Buffer* sharedVertexBuffer = renderComponent->GetSharedVertexBuffer();
+				Buffer* sharedIndexBuffer = renderComponent->GetSharedIndexBuffer();
+
+				std::vector<VkBuffer> defaultVertexBuffers = { sharedVertexBuffer->GetBuffer() };
+				std::vector<U64> defaultOffsets = { 0 };
+
+				vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPhysicallyBasedPipelineLayout, 0, 1, &mPhysicallyBasedDescriptorSets[i], 0, 0);
+				vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, PhysicallyBasedVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
+				vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, sharedIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+				static PerEntityData perEntityData = {};
+
+				perEntityData.TransformIndex = entities[i]->GetTransformIndex();
+
+				vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mPhysicallyBasedPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData);
+
+				U32 indexCount = (U32)(sharedIndexBuffer->GetSize() / sizeof(U32));
+
+				vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, indexCount, 1, 0, 0, 0);
+			}
+		}
+		*/
+	}
+
+	/* // TODO: create pipelines and submit them..
+	{
+		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mDebugPipeline);
+
+		std::vector<VkBuffer> defaultVertexBuffers = { mDebugVertexBuffer->GetBuffer() };
+		std::vector<U64> defaultOffsets = { 0 };
+
+		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mDebugPipelineLayout, 0, 1, &mDebugDescriptorSets[0], 0, 0);
+		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, DebugVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
+		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mDebugIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mDebugPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData); // TODO
+
+		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mDebugIndexCount, 1, 0, 0, 0);
+	}
+
+	{
+		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mInterfacePipeline);
+
+		std::vector<VkBuffer> defaultVertexBuffers = { mInterfaceVertexBuffer->GetBuffer() };
+		std::vector<U64> defaultOffsets = { 0 };
+
+		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mInterfacePipelineLayout, 0, 1, &mInterfaceDescriptorSets[0], 0, 0);
+		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, InterfaceVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
+		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mInterfaceIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mInterfacePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData); // TODO
+
+		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mInterfaceIndexCount, 1, 0, 0, 0);
+	}
+
+	{
+		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mTextPipeline);
+
+		std::vector<VkBuffer> defaultVertexBuffers = { mTextVertexBuffer->GetBuffer() };
+		std::vector<U64> defaultOffsets = { 0 };
+
+		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mTextPipelineLayout, 0, 1, &mTextDescriptorSets[0], 0, 0);
+		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, TextVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
+		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mTextIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mTextPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData);
+
+		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mTextIndexCount, 1, 0, 0, 0);
+	}
+	*/
+
+	vkCmdEndRenderPass(s_vulkan_renderer_graphic_command_buffer);
+
+	vkEndCommandBuffer(s_vulkan_renderer_graphic_command_buffer);
+
+	TRACY_ZONE_END
 }
 void vulkan_renderer_command_buffer_free(void)
 {
@@ -351,6 +548,10 @@ void vulkan_renderer_command_buffer_free(void)
 void vulkan_renderer_sync_objects_free(void)
 {
 	TRACY_ZONE_BEGIN
+
+	vkQueueWaitIdle(g_vulkan_instance_graphic_queue); // TODO
+	vkQueueWaitIdle(g_vulkan_instance_compute_queue); // TODO
+	vkQueueWaitIdle(g_vulkan_instance_present_queue); // TODO
 
 	vkDestroySemaphore(g_vulkan_instance_device, s_vulkan_renderer_graphic_complete_semaphore, 0);
 	vkDestroySemaphore(g_vulkan_instance_device, s_vulkan_renderer_compute_complete_semaphore, 0);

@@ -7,4 +7,10 @@ typedef enum _component_type_t
 	COMPONENT_TYPE_CAMERA,
 } component_type_t;
 
+typedef enum _component_bit_t
+{
+	COMPONENT_BIT_TRANSFORM = 1 << COMPONENT_TYPE_TRANSFORM,
+	COMPONENT_BIT_CAMERA = 1 << COMPONENT_TYPE_CAMERA,
+} component_bit_t;
+
 #endif // VEGA_ENGINE_COMPONENT_TYPE_H

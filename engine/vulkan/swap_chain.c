@@ -20,7 +20,7 @@ vector_t g_vulkan_swap_chain_image_views = { 0 };
 
 image_t g_vulkan_swap_chain_depth_image = { 0 };
 
-static VkSwapchainKHR s_vulkan_swap_chain = 0;
+VkSwapchainKHR g_vulkan_swap_chain = 0;
 
 static vector_t s_vulkan_swap_chain_images = { 0 };
 
@@ -64,7 +64,7 @@ void vulkan_swap_chain_alloc(void)
 		swap_chain_create_info.queueFamilyIndexCount = ARRAY_COUNT(queue_families);
 	}
 
-	vkCreateSwapchainKHR(g_vulkan_instance_device, &swap_chain_create_info, 0, &s_vulkan_swap_chain);
+	vkCreateSwapchainKHR(g_vulkan_instance_device, &swap_chain_create_info, 0, &g_vulkan_swap_chain);
 
 	vulkan_swap_chain_images_alloc();
 	vulkan_swap_chain_image_views_alloc();
@@ -78,7 +78,7 @@ void vulkan_swap_chain_free(void)
 	vulkan_swap_chain_image_views_free();
 	vulkan_swap_chain_images_free();
 
-	vkDestroySwapchainKHR(g_vulkan_instance_device, s_vulkan_swap_chain, 0);
+	vkDestroySwapchainKHR(g_vulkan_instance_device, g_vulkan_swap_chain, 0);
 
 	std_vector_free(&g_vulkan_swap_chain_image_views);
 	std_vector_free(&s_vulkan_swap_chain_images);
@@ -92,7 +92,7 @@ void vulkan_swap_chain_resize_before(void)
 	vulkan_swap_chain_image_views_free();
 	vulkan_swap_chain_images_free();
 
-	vkDestroySwapchainKHR(g_vulkan_instance_device, s_vulkan_swap_chain, 0);
+	vkDestroySwapchainKHR(g_vulkan_instance_device, g_vulkan_swap_chain, 0);
 
 	TRACY_ZONE_END
 }
@@ -133,7 +133,7 @@ void vulkan_swap_chain_resize_after(void)
 		swap_chain_create_info.queueFamilyIndexCount = ARRAY_COUNT(queue_families);
 	}
 
-	vkCreateSwapchainKHR(g_vulkan_instance_device, &swap_chain_create_info, 0, &s_vulkan_swap_chain);
+	vkCreateSwapchainKHR(g_vulkan_instance_device, &swap_chain_create_info, 0, &g_vulkan_swap_chain);
 
 	vulkan_swap_chain_images_alloc();
 	vulkan_swap_chain_image_views_alloc();
@@ -144,11 +144,11 @@ void vulkan_swap_chain_images_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkGetSwapchainImagesKHR(g_vulkan_instance_device, s_vulkan_swap_chain, &g_vulkan_swap_chain_image_count, 0);
+	vkGetSwapchainImagesKHR(g_vulkan_instance_device, g_vulkan_swap_chain, &g_vulkan_swap_chain_image_count, 0);
 
 	std_vector_resize(&s_vulkan_swap_chain_images, g_vulkan_swap_chain_image_count);
 
-	vkGetSwapchainImagesKHR(g_vulkan_instance_device, s_vulkan_swap_chain, &g_vulkan_swap_chain_image_count, std_vector_buffer(&s_vulkan_swap_chain_images));
+	vkGetSwapchainImagesKHR(g_vulkan_instance_device, g_vulkan_swap_chain, &g_vulkan_swap_chain_image_count, std_vector_buffer(&s_vulkan_swap_chain_images));
 
 	g_vulkan_swap_chain_depth_format = vulkan_image_find_depth_format();
 	g_vulkan_swap_chain_depth_image = vulkan_image_2d_depth_alloc(g_vulkan_instance_surface_capabilities.currentExtent.width, g_vulkan_instance_surface_capabilities.currentExtent.height, g_vulkan_swap_chain_depth_format);
