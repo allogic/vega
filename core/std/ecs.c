@@ -79,7 +79,7 @@ void std_ecs_delete(ecs_t* ecs, uint64_t entity)
 	{
 		if (IS_BIT_SET(mask, bit))
 		{
-			dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+			dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 
 			std_dat_remove(pool, entity);
 		}
@@ -98,7 +98,7 @@ void std_ecs_register(ecs_t* ecs, uint64_t bit, uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+	dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 
 	if (IS_BIT_SET(ecs->active_pools, bit))
 	{
@@ -126,7 +126,7 @@ void std_ecs_attach(ecs_t* ecs, uint64_t entity, uint64_t bit, void const* value
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+	dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 	std_dat_set(pool, entity, value);
 
 	uint64_t mask = std_fdat64_get(&ecs->masks, entity);
@@ -139,7 +139,7 @@ void std_ecs_detach(ecs_t* ecs, uint64_t entity, uint64_t bit)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+	dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 	std_dat_remove(pool, entity);
 
 	uint64_t mask = std_fdat64_get(&ecs->masks, entity);
@@ -152,7 +152,7 @@ void std_ecs_set(ecs_t* ecs, uint64_t entity, uint64_t bit, void const* value)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+	dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 	std_dat_set(pool, entity, value);
 
 	TRACY_ZONE_END
@@ -161,35 +161,38 @@ void* std_ecs_get(ecs_t* ecs, uint64_t entity, uint64_t bit)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+	dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 	void* component = std_dat_get(pool, entity);
 
 	TRACY_ZONE_END
 
 	return component;
 }
-vector_t std_ecs_all(ecs_t* ecs, uint64_t mask)
+void std_ecs_query(ecs_t* ecs, ecs_query_t* query)
 {
 	TRACY_ZONE_BEGIN
 
-	vector_t view = std_vector_alloc(sizeof(dat_t*));
+	// TODO: only execute this function if dirty..
+
+	std_vector_clear(&query->view);
 
 	uint64_t bit = 0;
 	while (bit < ECS_MAX_POOLS)
 	{
-		dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+		dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 
-		if (IS_BIT_SET(mask, bit))
+		if (IS_BIT_SET(query->mask, bit))
 		{
-			std_vector_push(&view, &pool);
+			std_vector_push(&query->view, &pool);
 		}
 
 		bit++;
 	}
 
-	TRACY_ZONE_END
+	query->pool = std_ecs_smallest(ecs, &query->view);
+	query->count = std_dat_count(query->pool);
 
-	return view;
+	TRACY_ZONE_END
 }
 uint8_t std_ecs_contains(ecs_t* ecs, uint64_t entity, vector_t* view)
 {
@@ -201,7 +204,7 @@ uint8_t std_ecs_contains(ecs_t* ecs, uint64_t entity, vector_t* view)
 	uint64_t view_count = std_vector_count(view);
 	while (view_index < view_count)
 	{
-		dat_t* pool = *(dat_t**)std_vector_at(view, view_index);;
+		dat_t* pool = *(dat_t**)std_vector_get(view, view_index);;
 
 		if (std_dat_contains(pool, entity) == 0)
 		{
@@ -241,26 +244,24 @@ void* std_ecs_value(ecs_t* ecs, uint64_t entity, uint64_t bit, vector_t* view)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* pool = *(dat_t**)std_vector_at(view, bit);
+	dat_t* pool = *(dat_t**)std_vector_get(view, bit);
 	void* value = std_dat_value(pool, entity);
 
 	TRACY_ZONE_END
 
 	return value;
 }
-void std_ecs_for(ecs_t* ecs, vector_t* view, ecs_for_func_t for_func)
+void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_func_t for_func)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t* smallest_pool = std_ecs_smallest(ecs, view);
-
 	uint64_t entity_index = 0;
-	uint64_t entity_count = std_dat_count(smallest_pool);
+	uint64_t entity_count = std_dat_count(query->pool);
 	while (entity_index < entity_count)
 	{
-		uint64_t entity = std_dat_id(smallest_pool, entity_index);
+		uint64_t entity = std_dat_id(query->pool, entity_index);
 
-		for_func(ecs, entity, view);
+		for_func(ecs, entity, &query->view);
 
 		entity_index++;
 	}
@@ -276,7 +277,7 @@ void std_ecs_clear(ecs_t* ecs)
 	{
 		if (IS_BIT_SET(ecs->active_pools, bit))
 		{
-			dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+			dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 
 			std_dat_clear(pool);
 		}
@@ -302,7 +303,7 @@ void std_ecs_free(ecs_t* ecs)
 	{
 		if (IS_BIT_SET(ecs->active_pools, bit))
 		{
-			dat_t* pool = (dat_t*)std_vector_at(&ecs->pools, bit);
+			dat_t* pool = (dat_t*)std_vector_get(&ecs->pools, bit);
 
 			std_dat_free(pool);
 		}
@@ -320,6 +321,26 @@ void std_ecs_free(ecs_t* ecs)
 
 	TRACY_ZONE_END
 }
+void std_ecs_query_alloc(ecs_query_t* query)
+{
+	TRACY_ZONE_BEGIN
+
+	query->view = std_vector_alloc(sizeof(dat_t*));
+	query->pool = 0;
+	query->count = 0;
+
+	TRACY_ZONE_END
+}
+void std_ecs_query_free(ecs_query_t* query)
+{
+	TRACY_ZONE_BEGIN
+
+	std_vector_free(&query->view);
+	query->pool = 0;
+	query->count = 0;
+
+	TRACY_ZONE_END
+}
 dat_t* std_ecs_smallest(ecs_t* ecs, vector_t* view)
 {
 	TRACY_ZONE_BEGIN
@@ -332,7 +353,7 @@ dat_t* std_ecs_smallest(ecs_t* ecs, vector_t* view)
 	uint64_t view_count = std_vector_count(view);
 	while (view_index < view_count)
 	{
-		dat_t* pool = *(dat_t**)std_vector_at(view, view_index);
+		dat_t* pool = *(dat_t**)std_vector_get(view, view_index);
 
 		uint64_t pool_count = std_dat_count(pool);
 		if (pool_count < smallest_pool_count)

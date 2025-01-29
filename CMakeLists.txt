@@ -11,10 +11,10 @@ set (CMAKE_C_STANDARD_REQUIRED ON)
 set (CMAKE_C_EXTENSIONS OFF)
 
 ###############################################################
-# Set SDK paths
+# Set global paths
 ###############################################################
 
-set (VULKAN_SDK "C:/VulkanSDK/1.4.304.0")
+set (VULKAN_SDK_DIR "C:/VulkanSDK/1.4.304.0")
 
 ###############################################################
 # Set default configuration

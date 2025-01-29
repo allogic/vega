@@ -75,7 +75,7 @@ void* std_dat_get(dat_t* dat, uint64_t id)
 	uint64_t dense_index = std_dat_get_dense_index(dat, id);
 	if (dense_index != DAT_TOMBSTONE)
 	{
-		value = std_vector_at(&dat->values, dense_index);
+		value = std_vector_get(&dat->values, dense_index);
 	}
 
 	TRACY_ZONE_END
@@ -166,7 +166,7 @@ uint64_t std_dat_id(dat_t* dat, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t id = std_fvector64_at(&dat->ids, index);
+	uint64_t id = std_fvector64_get(&dat->ids, index);
 
 	TRACY_ZONE_END
 
@@ -176,7 +176,7 @@ void* std_dat_value(dat_t* dat, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 
-	void* value = std_vector_at(&dat->values, index);
+	void* value = std_vector_get(&dat->values, index);
 
 	TRACY_ZONE_END
 

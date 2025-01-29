@@ -75,7 +75,7 @@ uint64_t std_fdat64_get(fdat64_t* dat, uint64_t id)
 	uint64_t dense_index = std_fdat64_get_dense_index(dat, id);
 	if (dense_index != FDAT64_TOMBSTONE)
 	{
-		value = std_fvector64_at(&dat->values, dense_index);
+		value = std_fvector64_get(&dat->values, dense_index);
 	}
 
 	TRACY_ZONE_END
@@ -166,7 +166,7 @@ uint64_t std_fdat64_id(fdat64_t* dat, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t id = std_fvector64_at(&dat->ids, index);
+	uint64_t id = std_fvector64_get(&dat->ids, index);
 
 	TRACY_ZONE_END
 
@@ -176,7 +176,7 @@ uint64_t std_fdat64_value(fdat64_t* dat, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t value = std_fvector64_at(&dat->values, index);
+	uint64_t value = std_fvector64_get(&dat->values, index);
 
 	TRACY_ZONE_END
 

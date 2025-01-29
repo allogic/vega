@@ -23,7 +23,7 @@
 #include <vega/engine/asset/model.h>
 #include <vega/engine/asset/texture.h>
 
-#include <vega/engine/vulkan/vertex.h>
+#include <vega/engine/renderer/vertex.h>
 
 #ifndef TRACY_THREAD_NAME
 	#define TRACY_THREAD_NAME(NAME) TracyCSetThreadName(NAME);
@@ -375,7 +375,7 @@ void asset_loader_collect_thread_handles_recursive(asset_t* parent, vector_t* as
 	uint64_t child_count = std_vector_count(&parent->children);
 	while (child_index < child_count)
 	{
-		asset_t* child = *(asset_t**)std_vector_at(&parent->children, child_index);
+		asset_t* child = *(asset_t**)std_vector_get(&parent->children, child_index);
 
 		if (child->thread_handle)
 		{

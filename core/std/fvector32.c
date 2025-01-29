@@ -38,6 +38,15 @@ fvector32_t std_fvector32_alloc(void)
 
 	return vector;
 }
+void std_fvector32_fill(fvector32_t* vector, uint32_t value)
+{
+	uint64_t buffer_index = 0;
+	while (buffer_index < vector->buffer_count)
+	{
+		*(vector->buffer + buffer_index) = value;
+		buffer_index++;
+	}
+}
 void std_fvector32_push(fvector32_t* vector, uint32_t value)
 {
 	TRACY_ZONE_BEGIN
@@ -151,7 +160,7 @@ uint32_t std_fvector32_front(fvector32_t* vector)
 
 	return value;
 }
-uint32_t std_fvector32_at(fvector32_t* vector, uint64_t index)
+uint32_t std_fvector32_get(fvector32_t* vector, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 

@@ -4,6 +4,7 @@
 #include <vega/engine/scene.h>
 
 #include <vega/engine/component/camera.h>
+#include <vega/engine/component/renderable.h>
 #include <vega/engine/component/transform.h>
 #include <vega/engine/component/types.h>
 
@@ -49,8 +50,9 @@ void scene_push(void)
 
 	scene.ecs = std_ecs_alloc();
 
-	std_ecs_register(&scene.ecs, COMPONENT_TYPE_TRANSFORM, sizeof(transform_t));
-	std_ecs_register(&scene.ecs, COMPONENT_TYPE_CAMERA, sizeof(camera_t));
+	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_TRANSFORM, sizeof(transform_t));
+	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_CAMERA, sizeof(camera_t));
+	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_RENDERABLE, sizeof(renderable_t));
 
 	scene.scene_editor = entity_scene_editor_create(&scene.ecs);
 

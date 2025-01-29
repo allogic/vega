@@ -41,6 +41,20 @@ vector_t std_vector_alloc(uint64_t value_size)
 
 	return vector;
 }
+void std_vector_fill(vector_t* vector, void const* value)
+{
+	if (value)
+	{
+		uint64_t buffer_index = 0;
+		uint64_t buffer_offset = 0;
+		while (buffer_index < vector->buffer_count)
+		{
+			memcpy(vector->buffer + buffer_offset, value, vector->value_size);
+			buffer_index++;
+			buffer_offset += vector->value_size;
+		}
+	}
+}
 void std_vector_push(vector_t* vector, void const* value)
 {
 	TRACY_ZONE_BEGIN
@@ -176,7 +190,7 @@ void* std_vector_front(vector_t* vector)
 
 	return value;
 }
-void* std_vector_at(vector_t* vector, uint64_t index)
+void* std_vector_get(vector_t* vector, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 

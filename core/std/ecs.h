@@ -19,6 +19,14 @@ typedef struct _ecs_t
 	vector_t pools;
 } ecs_t;
 
+typedef struct _ecs_query_t
+{
+	uint64_t mask;
+	uint64_t count;
+	vector_t view;
+	dat_t* pool;
+} ecs_query_t;
+
 typedef void (*ecs_for_func_t)(ecs_t* ecs, uint64_t entity, vector_t* view);
 
 ///////////////////////////////////////////////////////////////
@@ -34,14 +42,17 @@ void std_ecs_attach(ecs_t* ecs, uint64_t entity, uint64_t bit, void const* value
 void std_ecs_detach(ecs_t* ecs, uint64_t entity, uint64_t bit);
 void std_ecs_set(ecs_t* ecs, uint64_t entity, uint64_t bit, void const* value);
 void* std_ecs_get(ecs_t* ecs, uint64_t entity, uint64_t bit);
-vector_t std_ecs_all(ecs_t* ecs, uint64_t mask);
+void std_ecs_query(ecs_t* ecs, ecs_query_t* query);
 uint8_t std_ecs_contains(ecs_t* ecs, uint64_t entity, vector_t* view);
 uint64_t std_ecs_count(ecs_t* ecs);
 fvector64_t* std_ecs_entities(ecs_t* ecs);
 void* std_ecs_value(ecs_t* ecs, uint64_t entity, uint64_t bit, vector_t* view);
-void std_ecs_for(ecs_t* ecs, vector_t* view, ecs_for_func_t for_func);
+void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_func_t for_func);
 void std_ecs_clear(ecs_t* ecs);
 void std_ecs_free(ecs_t* ecs);
+
+void std_ecs_query_alloc(ecs_query_t* query);
+void std_ecs_query_free(ecs_query_t* query);
 
 ///////////////////////////////////////////////////////////////
 // Internal API

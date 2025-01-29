@@ -6,13 +6,15 @@ add_subdirectory (asset)
 add_subdirectory (component)
 add_subdirectory (entity)
 add_subdirectory (platform)
+add_subdirectory (renderer)
 add_subdirectory (vulkan)
 
 target_compile_definitions (engine PUBLIC "_CRT_SECURE_NO_WARNINGS")
+target_compile_definitions (engine PUBLIC "VEGA_ROOT_DIR=\"${CMAKE_SOURCE_DIR}\"")
 
-target_include_directories (engine PUBLIC "${VULKAN_SDK}/include")
+target_include_directories (engine PUBLIC "${VULKAN_SDK_DIR}/include")
 
-target_link_directories (engine PUBLIC "${VULKAN_SDK}/Lib")
+target_link_directories (engine PUBLIC "${VULKAN_SDK_DIR}/Lib")
 
 target_link_libraries (engine PUBLIC "vulkan-1.lib")
 target_link_libraries (engine PUBLIC "assimp-vc143-mt.lib")

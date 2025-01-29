@@ -203,16 +203,17 @@ void vulkan_instance_device_alloc(void)
 	physical_device_descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 	physical_device_descriptor_indexing_features.pNext = 0;
 
-	VkPhysicalDeviceFeatures2 physical_device_extended_features;
-	memset(&physical_device_extended_features, 0, sizeof(VkPhysicalDeviceFeatures2));
+	VkPhysicalDeviceFeatures2 physical_device_features_2;
+	memset(&physical_device_features_2, 0, sizeof(VkPhysicalDeviceFeatures2));
 
-	physical_device_extended_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	physical_device_extended_features.pNext = &physical_device_descriptor_indexing_features;
+	physical_device_features_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	physical_device_features_2.pNext = &physical_device_descriptor_indexing_features;
 
-	vkGetPhysicalDeviceFeatures2(g_vulkan_instance_physical_device, &physical_device_extended_features);
+	vkGetPhysicalDeviceFeatures2(g_vulkan_instance_physical_device, &physical_device_features_2);
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_vulkan_instance_physical_device, g_vulkan_instance_surface, &g_vulkan_instance_surface_capabilities);
 
-	physical_device_extended_features.features.samplerAnisotropy = 1;
+	physical_device_features_2.features.samplerAnisotropy = 1;
+	physical_device_features_2.features.shaderFloat64 = 1;
 
 	VkDeviceCreateInfo device_create_info;
 	memset(&device_create_info, 0, sizeof(VkDeviceCreateInfo));
@@ -220,7 +221,8 @@ void vulkan_instance_device_alloc(void)
 	device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	device_create_info.pQueueCreateInfos = std_vector_buffer(&device_queue_create_infos);
 	device_create_info.queueCreateInfoCount = (uint32_t)std_vector_count(&device_queue_create_infos);
-	device_create_info.pNext = &physical_device_extended_features;
+	device_create_info.pEnabledFeatures = 0;
+	device_create_info.pNext = &physical_device_features_2;
 	device_create_info.ppEnabledExtensionNames = s_vulkan_instance_device_extensions;
 	device_create_info.enabledExtensionCount = ARRAY_COUNT(s_vulkan_instance_device_extensions);
 
@@ -269,14 +271,16 @@ void vulkan_instance_find_physical_device(void)
 	uint64_t physical_device_index = 0;
 	while (physical_device_index < physical_device_count)
 	{
-		VkPhysicalDevice physical_device = *(VkPhysicalDevice*)std_vector_at(&physical_devices, physical_device_index);
+		VkPhysicalDevice physical_device = *(VkPhysicalDevice*)std_vector_get(&physical_devices, physical_device_index);
 
 		vkGetPhysicalDeviceProperties(physical_device, &g_vulkan_instance_physical_device_properties);
 		vkGetPhysicalDeviceFeatures(physical_device, &g_vulkan_instance_physical_device_features);
 
 		if (g_vulkan_instance_physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 		{
-			if (g_vulkan_instance_physical_device_features.geometryShader && g_vulkan_instance_physical_device_features.samplerAnisotropy)
+			if (g_vulkan_instance_physical_device_features.geometryShader &&
+				g_vulkan_instance_physical_device_features.samplerAnisotropy &&
+				g_vulkan_instance_physical_device_features.shaderFloat64)
 			{
 				g_vulkan_instance_physical_device = physical_device;
 
@@ -306,7 +310,7 @@ void vulkan_instance_find_physical_device_queue_families(void)
 	uint64_t physical_device_queue_family_property_index = 0;
 	while (physical_device_queue_family_property_index < queue_family_property_count)
 	{
-		VkQueueFamilyProperties properties = *(VkQueueFamilyProperties*)std_vector_at(&queue_family_properties, physical_device_queue_family_property_index);
+		VkQueueFamilyProperties properties = *(VkQueueFamilyProperties*)std_vector_get(&queue_family_properties, physical_device_queue_family_property_index);
 
 		uint32_t graphic_support = 0;
 		uint32_t compute_support = 0;
@@ -366,7 +370,7 @@ void vulkan_instance_check_physical_device_extensions(void)
 		uint64_t available_device_extension_index = 0;
 		while (available_device_extension_index < available_device_extension_count)
 		{
-			VkExtensionProperties properties = *(VkExtensionProperties*)std_vector_at(&available_device_extensions, available_device_extension_index);
+			VkExtensionProperties properties = *(VkExtensionProperties*)std_vector_get(&available_device_extensions, available_device_extension_index);
 
 			if (strcmp(s_vulkan_instance_device_extensions[device_extension_index], properties.extensionName) == 0)
 			{
@@ -418,7 +422,7 @@ void vulkan_instance_check_surface_capabilities(void)
 	uint64_t surface_format_index = 0;
 	while (surface_format_index < surface_format_count)
 	{
-		VkSurfaceFormatKHR surface_format = *(VkSurfaceFormatKHR*)std_vector_at(&surface_formats, surface_format_index);
+		VkSurfaceFormatKHR surface_format = *(VkSurfaceFormatKHR*)std_vector_get(&surface_formats, surface_format_index);
 
 		if ((surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) && (surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR))
 		{
@@ -433,7 +437,7 @@ void vulkan_instance_check_surface_capabilities(void)
 	uint64_t present_mode_index = 0;
 	while (present_mode_index < present_mode_count)
 	{
-		VkPresentModeKHR present_mode = *(VkPresentModeKHR*)std_vector_at(&present_modes, present_mode_index);
+		VkPresentModeKHR present_mode = *(VkPresentModeKHR*)std_vector_get(&present_modes, present_mode_index);
 
 		if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
 		{

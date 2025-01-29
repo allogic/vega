@@ -164,8 +164,8 @@ void vulkan_swap_chain_image_views_alloc(void)
 	uint32_t swap_chain_image_index = 0;
 	while (swap_chain_image_index < g_vulkan_swap_chain_image_count)
 	{
-		VkImage image = *(VkImage*)std_vector_at(&s_vulkan_swap_chain_images, swap_chain_image_index);
-		VkImageView* image_view = (VkImageView*)std_vector_at(&g_vulkan_swap_chain_image_views, swap_chain_image_index);
+		VkImage image = *(VkImage*)std_vector_get(&s_vulkan_swap_chain_images, swap_chain_image_index);
+		VkImageView* image_view = (VkImageView*)std_vector_get(&g_vulkan_swap_chain_image_views, swap_chain_image_index);
 
 		*image_view = vulkan_image_view_alloc(image, VK_IMAGE_VIEW_TYPE_2D, g_vulkan_instance_prefered_surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -191,7 +191,7 @@ void vulkan_swap_chain_image_views_free(void)
 	uint32_t swap_chain_image_index = 0;
 	while (swap_chain_image_index < g_vulkan_swap_chain_image_count)
 	{
-		VkImageView image_view = *(VkImageView*)std_vector_at(&g_vulkan_swap_chain_image_views, swap_chain_image_index);
+		VkImageView image_view = *(VkImageView*)std_vector_get(&g_vulkan_swap_chain_image_views, swap_chain_image_index);
 
 		vulkan_image_view_free(image_view);
 

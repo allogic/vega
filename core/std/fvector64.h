@@ -15,6 +15,7 @@ typedef struct _fvector64_t
 ///////////////////////////////////////////////////////////////
 
 fvector64_t std_fvector64_alloc(void);
+void std_fvector64_fill(fvector64_t* vector, uint64_t value);
 void std_fvector64_push(fvector64_t* vector, uint64_t value);
 void std_fvector64_pop(fvector64_t* vector, uint64_t* value);
 void std_fvector64_resize(fvector64_t* vector, uint64_t count);
@@ -23,7 +24,7 @@ void std_fvector64_swap(fvector64_t* vector, uint64_t left_index, uint64_t right
 void std_fvector64_clear(fvector64_t* vector);
 uint64_t std_fvector64_back(fvector64_t* vector);
 uint64_t std_fvector64_front(fvector64_t* vector);
-uint64_t std_fvector64_at(fvector64_t* vector, uint64_t index);
+uint64_t std_fvector64_get(fvector64_t* vector, uint64_t index);
 uint64_t* std_fvector64_buffer(fvector64_t* vector);
 void std_fvector64_set(fvector64_t* vector, uint64_t index, uint64_t value);
 uint8_t std_fvector64_empty(fvector64_t* vector);

@@ -38,6 +38,15 @@ fvector64_t std_fvector64_alloc(void)
 
 	return vector;
 }
+void std_fvector64_fill(fvector64_t* vector, uint64_t value)
+{
+	uint64_t buffer_index = 0;
+	while (buffer_index < vector->buffer_count)
+	{
+		*(vector->buffer + buffer_index) = value;
+		buffer_index++;
+	}
+}
 void std_fvector64_push(fvector64_t* vector, uint64_t value)
 {
 	TRACY_ZONE_BEGIN
@@ -151,7 +160,7 @@ uint64_t std_fvector64_front(fvector64_t* vector)
 
 	return value;
 }
-uint64_t std_fvector64_at(fvector64_t* vector, uint64_t index)
+uint64_t std_fvector64_get(fvector64_t* vector, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 

@@ -3,15 +3,21 @@
 #include <vega/engine/scene.h>
 
 #include <vega/engine/component/camera.h>
+#include <vega/engine/component/renderable.h>
 #include <vega/engine/component/transform.h>
 #include <vega/engine/component/types.h>
 
 #include <vega/engine/platform/window.h>
 
+#include <vega/engine/renderer/material.h>
+#include <vega/engine/renderer/mesh.h>
+#include <vega/engine/renderer/vertex.h>
+
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/instance.h>
-#include <vega/engine/vulkan/swap_chain.h>
+#include <vega/engine/vulkan/pipeline.h>
 #include <vega/engine/vulkan/renderer.h>
+#include <vega/engine/vulkan/swap_chain.h>
 
 #ifndef TRACY_ZONE_BEGIN
 	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
@@ -21,7 +27,13 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
+#ifndef VEGA_PBR_VERTEX_BINDING_ID
+	#define VEGA_PBR_VERTEX_BINDING_ID (0U)
+#endif // VEGA_PBR_VERTEX_BINDING_ID
+
 static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
+static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
+static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
 
 static buffer_t s_vulkan_renderer_time_info_buffer = { 0 };
 static buffer_t s_vulkan_renderer_screen_info_buffer = { 0 };
@@ -40,11 +52,54 @@ static VkRenderPass s_vulkan_renderer_render_pass = 0;
 
 static vector_t s_vulkan_renderer_frame_buffers = { 0 };
 
+static VkDescriptorSetLayoutBinding s_vulkan_renderer_pbr_descriptor_set_layout_bindings[] =
+{
+	{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, 0 },
+	{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, 0 },
+	{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, 0 },
+};
+
+static VkVertexInputBindingDescription s_vulkan_renderer_pbr_vertex_input_binding_descriptions[] =
+{
+	{ VEGA_PBR_VERTEX_BINDING_ID, sizeof(pbr_vertex_t), VK_VERTEX_INPUT_RATE_VERTEX },
+};
+
+static VkVertexInputAttributeDescription s_vulkan_renderer_pbr_vertex_input_attribute_descriptions[] =
+{
+	{ 0, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, 0 },
+	{ 2, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, normal) },
+	{ 4, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, tangent) },
+	{ 6, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, bitangent) },
+	{ 8, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, color_channel_0) },
+	{ 10, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, texcoord_channel_0) },
+	{ 12, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, bone_indices) },
+	{ 14, VEGA_PBR_VERTEX_BINDING_ID, VK_FORMAT_R64G64B64A64_SFLOAT, VEGA_OFFSET_OF(pbr_vertex_t, bone_weights) },
+};
+
+static char const* s_vulkan_renderer_pbr_vertex_shader_file_path = VEGA_ROOT_DIR "/shaders/pbr.vert.spv";
+static char const* s_vulkan_renderer_pbr_fragment_shader_file_path = VEGA_ROOT_DIR "/shaders/pbr.frag.spv";
+
+static VkDescriptorPool s_vulkan_renderer_pbr_descriptor_pool = 0;
+static VkDescriptorSetLayout s_vulkan_renderer_pbr_descriptor_set_layout = 0;
+
+static vector_t s_vulkan_renderer_pbr_descriptor_sets = { 0 };
+
+static uint64_t s_vulkan_renderer_pbr_descriptor_set_index = 0;
+
+static VkPipelineLayout s_vulkan_renderer_pbr_pipeline_layout = 0;
+static VkPipeline s_vulkan_renderer_pbr_pipeline = 0;
+
+// TODO: create entity filters for materials different then the pbr workflow..
+
+static ecs_query_t s_vulkan_renderer_camera_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_CAMERA };
+static ecs_query_t s_vulkan_renderer_render_query = { VEGA_COMPONENT_BIT_RENDERABLE };
+
 void vulkan_renderer_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
 	s_vulkan_renderer_frame_buffers = std_vector_alloc(sizeof(VkFramebuffer));
+	s_vulkan_renderer_pbr_descriptor_sets = std_vector_alloc(sizeof(VkDescriptorSet));
 
 	s_vulkan_renderer_time_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(time_info_t));
 	s_vulkan_renderer_screen_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(screen_info_t));
@@ -54,6 +109,15 @@ void vulkan_renderer_alloc(void)
 	vulkan_renderer_sync_objects_alloc();
 	vulkan_renderer_render_pass_alloc();
 	vulkan_renderer_frame_buffer_alloc();
+
+	// TODO: adjust pool count somehow to entity count..
+	s_vulkan_renderer_pbr_descriptor_pool = vulkan_pipeline_descriptor_pool_alloc(1, s_vulkan_renderer_pbr_descriptor_set_layout_bindings, ARRAY_COUNT(s_vulkan_renderer_pbr_descriptor_set_layout_bindings));
+	s_vulkan_renderer_pbr_descriptor_set_layout = vulkan_pipeline_descriptor_set_layout_alloc(s_vulkan_renderer_pbr_descriptor_set_layout_bindings, ARRAY_COUNT(s_vulkan_renderer_pbr_descriptor_set_layout_bindings));
+	s_vulkan_renderer_pbr_pipeline_layout = vulkan_pipeline_layout_alloc(s_vulkan_renderer_pbr_descriptor_set_layout, 0, 0);
+	s_vulkan_renderer_pbr_pipeline = vulkan_pipeline_graphic_alloc(s_vulkan_renderer_pbr_pipeline_layout, s_vulkan_renderer_render_pass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, s_vulkan_renderer_pbr_vertex_shader_file_path, s_vulkan_renderer_pbr_fragment_shader_file_path, s_vulkan_renderer_pbr_vertex_input_binding_descriptions, ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_binding_descriptions), s_vulkan_renderer_pbr_vertex_input_attribute_descriptions, ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_attribute_descriptions));
+
+	std_ecs_query_alloc(&s_vulkan_renderer_camera_query);
+	std_ecs_query_alloc(&s_vulkan_renderer_render_query);
 
 	TRACY_ZONE_END
 }
@@ -134,6 +198,14 @@ void vulkan_renderer_free(void)
 {
 	TRACY_ZONE_BEGIN
 
+	std_ecs_query_free(&s_vulkan_renderer_render_query);
+	std_ecs_query_free(&s_vulkan_renderer_camera_query);
+
+	vulkan_pipeline_free(s_vulkan_renderer_pbr_pipeline);
+	vulkan_pipeline_layout_free(s_vulkan_renderer_pbr_pipeline_layout);
+	vulkan_pipeline_descriptor_set_layout_free(s_vulkan_renderer_pbr_descriptor_set_layout);
+	vulkan_pipeline_descriptor_pool_free(s_vulkan_renderer_pbr_descriptor_pool);
+
 	vulkan_renderer_frame_buffer_free();
 	vulkan_renderer_render_pass_free();
 	vulkan_renderer_sync_objects_free();
@@ -143,6 +215,7 @@ void vulkan_renderer_free(void)
 	vulkan_buffer_free(&s_vulkan_renderer_screen_info_buffer);
 	vulkan_buffer_free(&s_vulkan_renderer_time_info_buffer);
 
+	std_vector_free(&s_vulkan_renderer_pbr_descriptor_sets);
 	std_vector_free(&s_vulkan_renderer_frame_buffers);
 
 	TRACY_ZONE_END
@@ -293,7 +366,7 @@ void vulkan_renderer_frame_buffer_alloc(void)
 	{
 		VkImageView image_attachments[] =
 		{
-			*(VkImageView*)std_vector_at(&g_vulkan_swap_chain_image_views, swap_chain_image_index),
+			*(VkImageView*)std_vector_get(&g_vulkan_swap_chain_image_views, swap_chain_image_index),
 			g_vulkan_swap_chain_depth_image.image_view,
 		};
 
@@ -308,7 +381,7 @@ void vulkan_renderer_frame_buffer_alloc(void)
 		frame_buffer_create_info.height = g_vulkan_instance_surface_capabilities.currentExtent.height;
 		frame_buffer_create_info.layers = 1;
 
-		vkCreateFramebuffer(g_vulkan_instance_device, &frame_buffer_create_info, 0, std_vector_at(&s_vulkan_renderer_frame_buffers, swap_chain_image_index));
+		vkCreateFramebuffer(g_vulkan_instance_device, &frame_buffer_create_info, 0, std_vector_get(&s_vulkan_renderer_frame_buffers, swap_chain_image_index));
 
 		swap_chain_image_index++;
 	}
@@ -319,25 +392,70 @@ void vulkan_renderer_update_uniform_buffers(void)
 {
 	TRACY_ZONE_BEGIN
 
+	time_info_t* time_info = (time_info_t*)s_vulkan_renderer_time_info_buffer.mapped_buffer;
+
+	time_info->time = g_platform_window_time;
+	time_info->delta_time = g_platform_window_delta_time;
+
+	screen_info_t* screen_info = (screen_info_t*)s_vulkan_renderer_screen_info_buffer.mapped_buffer;
+
+	screen_info->size.x = (double)g_platform_window_width;
+	screen_info->size.x = (double)g_platform_window_height;
+
 	scene_t* scene = scene_current();
 
 	if (scene)
 	{
-		time_info_t* time_info = (time_info_t*)s_vulkan_renderer_time_info_buffer.mapped_buffer;
+		std_ecs_query(&scene->ecs, &s_vulkan_renderer_camera_query);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_camera_query, vulkan_renderer_update_projection_info_proc);
+	}
 
-		time_info->time = g_platform_window_time;
-		time_info->delta_time = g_platform_window_delta_time;
+	TRACY_ZONE_END
+}
+void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count)
+{
+	TRACY_ZONE_BEGIN
 
-		screen_info_t* screen_info = (screen_info_t*)s_vulkan_renderer_screen_info_buffer.mapped_buffer;
+	std_vector_resize(&s_vulkan_renderer_pbr_descriptor_sets, descriptor_count);
 
-		screen_info->size.x = (double)g_platform_window_width;
-		screen_info->size.x = (double)g_platform_window_height;
+	vector_t descriptor_set_layouts = std_vector_alloc(sizeof(VkDescriptorSetLayout));
 
-		vector_t view = std_ecs_all(&scene->ecs, (1 << COMPONENT_TYPE_TRANSFORM) | (1 << COMPONENT_TYPE_CAMERA));
+	std_vector_resize(&descriptor_set_layouts, descriptor_count);
 
-		std_ecs_for(&scene->ecs, &view, vulkan_renderer_update_projection_info_proc);
+	uint64_t descriptor_index = 0;
+	while (descriptor_index < descriptor_count)
+	{
+		*(VkDescriptorSetLayout*)std_vector_get(&descriptor_set_layouts, descriptor_index) = s_vulkan_renderer_pbr_descriptor_set_layout;
 
-		std_vector_free(&view); // TODO: create this view only if the scene is dirty..
+		descriptor_index++;
+	}
+
+	VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
+	memset(&descriptor_set_allocate_info, 0, sizeof(VkDescriptorSetAllocateInfo));
+
+	descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descriptor_set_allocate_info.descriptorSetCount = (uint32_t)descriptor_count;
+	descriptor_set_allocate_info.descriptorPool = s_vulkan_renderer_pbr_descriptor_pool;
+	descriptor_set_allocate_info.pSetLayouts = std_vector_buffer(&descriptor_set_layouts);
+
+	vkAllocateDescriptorSets(g_vulkan_instance_device, &descriptor_set_allocate_info, std_vector_buffer(&s_vulkan_renderer_pbr_descriptor_sets));
+
+	std_vector_free(&descriptor_set_layouts);
+
+	TRACY_ZONE_END
+}
+void vulkan_renderer_update_pbr_descriptor_sets(void)
+{
+	TRACY_ZONE_BEGIN
+
+	s_vulkan_renderer_pbr_descriptor_set_index = 0;
+
+	scene_t* scene = scene_current();
+
+	if (scene)
+	{
+		std_ecs_query(&scene->ecs, &s_vulkan_renderer_render_query);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_render_query, vulkan_renderer_update_pbr_descriptor_sets_proc);
 	}
 
 	TRACY_ZONE_END
@@ -413,7 +531,7 @@ void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
 
 	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_create_info.renderPass = s_vulkan_renderer_render_pass;
-	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_at(&s_vulkan_renderer_frame_buffers, image_index);
+	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_get(&s_vulkan_renderer_frame_buffers, image_index);
 	render_pass_create_info.renderArea.offset.x = 0;
 	render_pass_create_info.renderArea.offset.y = 0;
 	render_pass_create_info.renderArea.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;
@@ -444,91 +562,17 @@ void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
 	vkCmdSetViewport(s_vulkan_renderer_graphic_command_buffer, 0, 1, &viewport);
 	vkCmdSetScissor(s_vulkan_renderer_graphic_command_buffer, 0, 1, &scissor);
 
+	vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline);
+
+	s_vulkan_renderer_pbr_descriptor_set_index = 0;
+
 	scene_t* scene = scene_current();
 
 	if (scene)
 	{
-		/* // TODO
-		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPhysicallyBasedPipeline);
-
-		auto const& entities = Scene->GetEntitiesToBeRendered();
-
-		for (U32 i = 0; i < entities.size(); ++i)
-		{
-			RenderComponent* renderComponent = entities[i]->GetComponent<RenderComponent>();
-
-			if (renderComponent)
-			{
-				Buffer* sharedVertexBuffer = renderComponent->GetSharedVertexBuffer();
-				Buffer* sharedIndexBuffer = renderComponent->GetSharedIndexBuffer();
-
-				std::vector<VkBuffer> defaultVertexBuffers = { sharedVertexBuffer->GetBuffer() };
-				std::vector<U64> defaultOffsets = { 0 };
-
-				vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPhysicallyBasedPipelineLayout, 0, 1, &mPhysicallyBasedDescriptorSets[i], 0, 0);
-				vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, PhysicallyBasedVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
-				vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, sharedIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-				static PerEntityData perEntityData = {};
-
-				perEntityData.TransformIndex = entities[i]->GetTransformIndex();
-
-				vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mPhysicallyBasedPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData);
-
-				U32 indexCount = (U32)(sharedIndexBuffer->GetSize() / sizeof(U32));
-
-				vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, indexCount, 1, 0, 0, 0);
-			}
-		}
-		*/
+		std_ecs_query(&scene->ecs, &s_vulkan_renderer_render_query);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_render_query, vulkan_renderer_pbr_render_proc);
 	}
-
-	/* // TODO: create pipelines and submit them..
-	{
-		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mDebugPipeline);
-
-		std::vector<VkBuffer> defaultVertexBuffers = { mDebugVertexBuffer->GetBuffer() };
-		std::vector<U64> defaultOffsets = { 0 };
-
-		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mDebugPipelineLayout, 0, 1, &mDebugDescriptorSets[0], 0, 0);
-		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, DebugVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
-		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mDebugIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mDebugPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData); // TODO
-
-		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mDebugIndexCount, 1, 0, 0, 0);
-	}
-
-	{
-		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mInterfacePipeline);
-
-		std::vector<VkBuffer> defaultVertexBuffers = { mInterfaceVertexBuffer->GetBuffer() };
-		std::vector<U64> defaultOffsets = { 0 };
-
-		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mInterfacePipelineLayout, 0, 1, &mInterfaceDescriptorSets[0], 0, 0);
-		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, InterfaceVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
-		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mInterfaceIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mInterfacePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData); // TODO
-
-		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mInterfaceIndexCount, 1, 0, 0, 0);
-	}
-
-	{
-		vkCmdBindPipeline(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mTextPipeline);
-
-		std::vector<VkBuffer> defaultVertexBuffers = { mTextVertexBuffer->GetBuffer() };
-		std::vector<U64> defaultOffsets = { 0 };
-
-		vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mTextPipelineLayout, 0, 1, &mTextDescriptorSets[0], 0, 0);
-		vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, TextVertexBindingId, 1, defaultVertexBuffers.data(), defaultOffsets.data());
-		vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, mTextIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-		//vkCmdPushConstants(s_vulkan_renderer_graphic_command_buffer, mTextPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PerEntityData), &perEntityData);
-
-		vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, mTextIndexCount, 1, 0, 0, 0);
-	}
-	*/
 
 	vkCmdEndRenderPass(s_vulkan_renderer_graphic_command_buffer);
 
@@ -576,7 +620,7 @@ void vulkan_renderer_frame_buffer_free(void)
 	uint32_t swap_chain_image_index = 0;
 	while (swap_chain_image_index < g_vulkan_swap_chain_image_count)
 	{
-		vkDestroyFramebuffer(g_vulkan_instance_device, *(VkFramebuffer*)std_vector_at(&s_vulkan_renderer_frame_buffers, swap_chain_image_index), 0);
+		vkDestroyFramebuffer(g_vulkan_instance_device, *(VkFramebuffer*)std_vector_get(&s_vulkan_renderer_frame_buffers, swap_chain_image_index), 0);
 
 		swap_chain_image_index++;
 	}
@@ -587,8 +631,8 @@ static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t ent
 {
 	TRACY_ZONE_BEGIN
 
-	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, COMPONENT_TYPE_TRANSFORM, view);
-	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, COMPONENT_TYPE_CAMERA, view);
+	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM, view);
+	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_CAMERA, view);
 
 	switch (camera->mode)
 	{
@@ -609,7 +653,7 @@ static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t ent
 			projection_info->view = math_matrix4_look_at(eye, center, up);
 
 			double fov = camera->fov;
-			double aspect_ratio = (double)g_platform_window_width / (double)g_platform_window_height;
+			double aspect_ratio = (double)g_vulkan_instance_surface_capabilities.currentExtent.width / (double)g_vulkan_instance_surface_capabilities.currentExtent.height;
 			double near_z = camera->near_z;
 			double far_z = camera->far_z;
 
@@ -618,6 +662,108 @@ static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t ent
 			break;
 		}
 	}
+
+	TRACY_ZONE_END
+}
+static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+{
+	TRACY_ZONE_BEGIN
+
+	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE, view);
+
+	// TODO: support more workflows..
+
+	switch (renderable->material_type)
+	{
+		case MATERIAL_TYPE_PBR:
+		{
+			pbr_material_t* pbr_material = (pbr_material_t*)renderable->material;
+
+			image_t* base_color = pbr_material->base_color;
+
+			VkDescriptorBufferInfo time_info_descriptor_buffer_info = { 0 };
+			time_info_descriptor_buffer_info.offset = 0;
+			time_info_descriptor_buffer_info.buffer = s_vulkan_renderer_time_info_buffer.buffer;
+			time_info_descriptor_buffer_info.range = s_vulkan_renderer_time_info_buffer.size;
+
+			VkDescriptorBufferInfo projection_info_descriptor_buffer_info = { 0 };
+			projection_info_descriptor_buffer_info.offset = 0;
+			projection_info_descriptor_buffer_info.buffer = s_vulkan_renderer_projection_info_buffer.buffer;
+			projection_info_descriptor_buffer_info.range = s_vulkan_renderer_projection_info_buffer.size;
+
+			VkDescriptorImageInfo base_color_descriptor_image_info = { 0 };
+			base_color_descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			base_color_descriptor_image_info.imageView = base_color->image_view;
+			base_color_descriptor_image_info.sampler = base_color->sampler;
+
+			VkDescriptorSet descriptor_set = *(VkDescriptorSet*)std_vector_get(&s_vulkan_renderer_pbr_descriptor_sets, s_vulkan_renderer_pbr_descriptor_set_index);
+
+			VkWriteDescriptorSet write_descriptor_sets[3] = { 0 };
+
+			write_descriptor_sets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_descriptor_sets[0].pNext = 0;
+			write_descriptor_sets[0].dstSet = descriptor_set;
+			write_descriptor_sets[0].dstBinding = 0;
+			write_descriptor_sets[0].dstArrayElement = 0;
+			write_descriptor_sets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			write_descriptor_sets[0].descriptorCount = 1;
+			write_descriptor_sets[0].pImageInfo = 0;
+			write_descriptor_sets[0].pBufferInfo = &time_info_descriptor_buffer_info;
+			write_descriptor_sets[0].pTexelBufferView = 0;
+
+			write_descriptor_sets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_descriptor_sets[1].pNext = 0;
+			write_descriptor_sets[1].dstSet = descriptor_set;
+			write_descriptor_sets[1].dstBinding = 1;
+			write_descriptor_sets[1].dstArrayElement = 0;
+			write_descriptor_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			write_descriptor_sets[1].descriptorCount = 1;
+			write_descriptor_sets[1].pImageInfo = 0;
+			write_descriptor_sets[1].pBufferInfo = &projection_info_descriptor_buffer_info;
+			write_descriptor_sets[1].pTexelBufferView = 0;
+
+			write_descriptor_sets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_descriptor_sets[2].pNext = 0;
+			write_descriptor_sets[2].dstSet = descriptor_set;
+			write_descriptor_sets[2].dstBinding = 2;
+			write_descriptor_sets[2].dstArrayElement = 0;
+			write_descriptor_sets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			write_descriptor_sets[2].descriptorCount = 1;
+			write_descriptor_sets[2].pImageInfo = &base_color_descriptor_image_info;
+			write_descriptor_sets[2].pBufferInfo = 0;
+			write_descriptor_sets[2].pTexelBufferView = 0;
+
+			vkUpdateDescriptorSets(g_vulkan_instance_device, (uint32_t)ARRAY_COUNT(write_descriptor_sets), write_descriptor_sets, 0, 0);
+
+			break;
+		}
+	}
+
+	s_vulkan_renderer_pbr_descriptor_set_index++;
+
+	TRACY_ZONE_END
+}
+static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+{
+	TRACY_ZONE_BEGIN
+
+	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE, view);
+
+	buffer_t* vertex_buffer = renderable->mesh->vertex_buffer;
+	buffer_t* index_buffer = renderable->mesh->index_buffer;
+
+	VkDescriptorSet descriptor_set = *(VkDescriptorSet*)std_vector_get(&s_vulkan_renderer_pbr_descriptor_sets, s_vulkan_renderer_pbr_descriptor_set_index);
+
+	VkBuffer default_vertex_buffers[] = { vertex_buffer->buffer };
+	uint64_t default_offsets[] = { 0 };
+
+	vkCmdBindDescriptorSets(s_vulkan_renderer_graphic_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline_layout, 0, 1, &descriptor_set, 0, 0);
+	vkCmdBindVertexBuffers(s_vulkan_renderer_graphic_command_buffer, VEGA_PBR_VERTEX_BINDING_ID, 1, default_vertex_buffers, default_offsets);
+	vkCmdBindIndexBuffer(s_vulkan_renderer_graphic_command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(s_vulkan_renderer_graphic_command_buffer, (uint32_t)(index_buffer->size / sizeof(uint32_t)), 1, 0, 0, 0);
+
+	s_vulkan_renderer_pbr_descriptor_set_index++;
 
 	TRACY_ZONE_END
 }

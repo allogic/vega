@@ -18,8 +18,8 @@ uint64_t entity_scene_editor_create(ecs_t* ecs)
 		.far_z = 1.0E6,
 	};
 
-	std_ecs_attach(ecs, entity, COMPONENT_TYPE_TRANSFORM, &transform);
-	std_ecs_attach(ecs, entity, COMPONENT_TYPE_CAMERA, &camera);
+	std_ecs_attach(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM, &transform);
+	std_ecs_attach(ecs, entity, VEGA_COMPONENT_TYPE_CAMERA, &camera);
 
 	return entity;
 }

@@ -46,6 +46,9 @@ void vulkan_renderer_frame_buffer_alloc(void);
 
 void vulkan_renderer_update_uniform_buffers(void);
 
+void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count);
+void vulkan_renderer_update_pbr_descriptor_sets(void);
+
 void vulkan_renderer_record_compute_command_buffer(void);
 void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index);
 
