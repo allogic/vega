@@ -45,11 +45,11 @@ set_t std_set_alloc(void)
 
 	return set;
 }
-uint8_t std_set_insert(set_t* set, void const* key, uint64_t key_size)
+void* std_set_insert(set_t* set, void const* key, uint64_t key_size)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t key_exists = 0;
+	void* existing_key = 0;
 
 	uint8_t load_factor = std_set_load_factor(set);
 	if (load_factor > SET_LOAD_FACTOR)
@@ -64,7 +64,7 @@ uint8_t std_set_insert(set_t* set, void const* key, uint64_t key_size)
 	{
 		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
 		{
-			key_exists = 1;
+			existing_key = curr->key;
 
 			break;
 		}
@@ -72,7 +72,7 @@ uint8_t std_set_insert(set_t* set, void const* key, uint64_t key_size)
 		curr = curr->next;
 	}
 
-	if (key_exists == 0)
+	if (existing_key == 0)
 	{
 		curr = (set_entry_t*)heap_alloc(sizeof(set_entry_t));
 		memset(curr, 0, sizeof(set_entry_t));
@@ -83,13 +83,15 @@ uint8_t std_set_insert(set_t* set, void const* key, uint64_t key_size)
 		curr->key_size = key_size;
 		memcpy(curr->key, key, key_size);
 
+		existing_key = curr->key;
+
 		set->table[hash] = curr;
 		set->entry_count++;
 	}
 
 	TRACY_ZONE_END
 
-	return key_exists;
+	return existing_key;
 }
 uint8_t std_set_remove(set_t* set, void const* key, uint64_t key_size)
 {
@@ -193,6 +195,80 @@ void std_set_clear(set_t* set)
 	set->entry_count = 0;
 
 	TRACY_ZONE_END
+}
+set_iter_t std_set_begin(set_t* set)
+{
+	TRACY_ZONE_BEGIN
+
+	set_iter_t iter = { 0 };
+
+	iter.curr = 0;
+	iter.set = set;
+	iter.table_index = 0;
+
+	TRACY_ZONE_END
+
+	return iter;
+}
+void* std_set_key(set_iter_t* iter, uint64_t* key_size)
+{
+	TRACY_ZONE_BEGIN
+
+	void* key = iter->curr->key;
+
+	if (key_size)
+	{
+		*key_size = iter->curr->key_size;
+	}
+
+	TRACY_ZONE_END
+
+	return key;
+}
+uint8_t std_set_end(set_iter_t* iter)
+{
+	TRACY_ZONE_BEGIN
+
+	uint8_t is_end = 1;
+
+	if (iter->curr && iter->curr->next)
+	{
+		iter->curr = iter->curr->next;
+
+		is_end = 0;
+	}
+	else if (iter->curr)
+	{
+		while (iter->table_index < iter->set->table_count)
+		{
+			iter->curr = iter->set->table[iter->table_index++];
+
+			if (iter->curr)
+			{
+				is_end = 0;
+
+				break;
+			}
+		}
+	}
+	else
+	{
+		while (iter->table_index < iter->set->table_count)
+		{
+			iter->curr = iter->set->table[iter->table_index++];
+
+			if (iter->curr)
+			{
+				is_end = 0;
+
+				break;
+			}
+		}
+	}
+
+	TRACY_ZONE_END
+
+	return is_end;
 }
 void std_set_free(set_t* set)
 {

@@ -86,3 +86,23 @@ scene_t* scene_current(void)
 
 	return current;
 }
+uint64_t scene_create_entity_from_asset(scene_t* scene, model_asset_t* model_asset)
+{
+	TRACY_ZONE_BEGIN
+
+	uint64_t entity = std_ecs_create(&scene->ecs);
+
+	scene_create_entity_from_asset_recursive(scene, model_asset, entity);
+
+	TRACY_ZONE_END
+
+	return entity;
+}
+void scene_create_entity_from_asset_recursive(scene_t* scene, model_asset_t* model_asset, uint64_t entity)
+{
+	TRACY_ZONE_BEGIN
+
+	// TODO
+
+	TRACY_ZONE_END
+}

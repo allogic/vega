@@ -27,7 +27,7 @@
 	#define MAP_LOAD_FACTOR (75ULL)
 #endif // MAP_LOAD_FACTOR
 
-map_t std_map_alloc(void)
+map_t std_map_alloc()
 {
 	TRACY_ZONE_BEGIN
 
@@ -45,11 +45,11 @@ map_t std_map_alloc(void)
 
 	return map;
 }
-uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size)
+void* std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t key_exists = 0;
+	void* existing_value = 0;
 
 	uint8_t load_factor = std_map_load_factor(map);
 
@@ -65,7 +65,7 @@ uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void cons
 	{
 		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
 		{
-			key_exists = 1;
+			existing_value = curr->value;
 
 			break;
 		}
@@ -73,7 +73,7 @@ uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void cons
 		curr = curr->next;
 	}
 
-	if (key_exists == 0)
+	if (existing_value == 0)
 	{
 		curr = (map_pair_t*)heap_alloc(sizeof(map_pair_t));
 		memset(curr, 0, sizeof(map_pair_t));
@@ -89,8 +89,14 @@ uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void cons
 		{
 			memcpy(curr->value, value, value_size);
 		}
+		else
+		{
+			memset(curr->value, 0, value_size);
+		}
 
 		curr->value_size = value_size;
+
+		existing_value = curr->value;
 
 		map->table[hash] = curr;
 		map->pair_count++;
@@ -98,9 +104,9 @@ uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void cons
 
 	TRACY_ZONE_END
 
-	return key_exists;
+	return existing_value;
 }
-uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size, void* value, uint64_t value_size)
+uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size)
 {
 	TRACY_ZONE_BEGIN
 
@@ -121,11 +127,6 @@ uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size, void* val
 			else
 			{
 				map->table[hash] = curr->next;
-			}
-
-			if (value)
-			{
-				memcpy(value, curr->value, MIN(value_size, curr->value_size));
 			}
 
 			heap_free(curr->key);
@@ -182,31 +183,6 @@ uint64_t std_map_count(map_t* map)
 
 	return pair_count;
 }
-void* std_map_at(map_t* map, void const* key, uint64_t key_size)
-{
-	TRACY_ZONE_BEGIN
-
-	void* value = 0;
-
-	uint64_t hash = std_map_hash(map, key, key_size, map->table_count);
-
-	map_pair_t* curr = map->table[hash];
-	while (curr)
-	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
-		{
-			value = curr->value;
-
-			break;
-		}
-
-		curr = curr->next;
-	}
-
-	TRACY_ZONE_END
-
-	return value;
-}
 void std_map_clear(map_t* map)
 {
 	TRACY_ZONE_BEGIN
@@ -234,6 +210,95 @@ void std_map_clear(map_t* map)
 	map->pair_count = 0;
 
 	TRACY_ZONE_END
+}
+map_iter_t std_map_begin(map_t* map)
+{
+	TRACY_ZONE_BEGIN
+
+	map_iter_t iter = { 0 };
+
+	iter.curr = 0;
+	iter.map = map;
+	iter.table_index = 0;
+
+	TRACY_ZONE_END
+
+	return iter;
+}
+void* std_map_key(map_iter_t* iter, uint64_t* key_size)
+{
+	TRACY_ZONE_BEGIN
+
+	void* key = iter->curr->key;
+
+	if (key_size)
+	{
+		*key_size = iter->curr->key_size;
+	}
+
+	TRACY_ZONE_END
+
+	return key;
+}
+void* std_map_value(map_iter_t* iter, uint64_t* value_size)
+{
+	TRACY_ZONE_BEGIN
+
+	void* value = iter->curr->value;
+
+	if (value_size)
+	{
+		*value_size = iter->curr->value_size;
+	}
+
+	TRACY_ZONE_END
+
+	return value;
+}
+uint8_t std_map_end(map_iter_t* iter)
+{
+	TRACY_ZONE_BEGIN
+
+	uint8_t is_end = 1;
+
+	if (iter->curr && iter->curr->next)
+	{
+		iter->curr = iter->curr->next;
+
+		is_end = 0;
+	}
+	else if (iter->curr)
+	{
+		while (iter->table_index < iter->map->table_count)
+		{
+			iter->curr = iter->map->table[iter->table_index++];
+
+			if (iter->curr)
+			{
+				is_end = 0;
+
+				break;
+			}
+		}
+	}
+	else
+	{
+		while (iter->table_index < iter->map->table_count)
+		{
+			iter->curr = iter->map->table[iter->table_index++];
+
+			if (iter->curr)
+			{
+				is_end = 0;
+
+				break;
+			}
+		}
+	}
+
+	TRACY_ZONE_END
+
+	return is_end;
 }
 void std_map_free(map_t* map)
 {

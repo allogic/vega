@@ -3,7 +3,9 @@
 
 #include <vega/core/heap.h>
 #include <vega/core/macros.h>
+#include <vega/core/random.h>
 #include <vega/core/timer.h>
+#include <vega/core/uuid.h>
 
 #include <vega/core/debug/tracy.h>
 

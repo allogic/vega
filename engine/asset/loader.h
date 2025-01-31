@@ -5,53 +5,34 @@
 
 #include <vega/core/core.h>
 
-typedef enum _asset_buffer_type_t
-{
-	ASSET_BUFFER_TYPE_MODEL,
-	ASSET_BUFFER_TYPE_TEXTURE,
-	ASSET_BUFFER_TYPE_MATERIAL,
-	ASSET_BUFFER_TYPE_MESH,
-} asset_buffer_type_t;
+#include <vega/engine/asset/material.h>
+#include <vega/engine/asset/mesh.h>
+#include <vega/engine/asset/model.h>
+#include <vega/engine/asset/texture.h>
 
-typedef struct _asset_t
+typedef struct _model_asset_thread_args_t
 {
-	struct _asset_t* parent;
-	vector_t children;
-	asset_buffer_type_t buffer_type;
-	void* buffer;
-	string_t name;
-	string_t file_stem;
-	string_t file_ext;
-	string_t file_root;
-	string_t file_path;
-	uint8_t loaded;
-	uint8_t is_loading;
-	void* thread_handle;
-} asset_t;
+	model_asset_t* model_asset;
+} model_asset_thread_args_t;
 
-typedef struct _asset_model_thread_args_t
+typedef struct _texture_asset_thread_args_t
 {
-	asset_t* asset;
-} asset_model_thread_args_t;
+	texture_asset_t* texture_asset;
+} texture_asset_thread_args_t;
 
-typedef struct _asset_texture_thread_args_t
+typedef struct _material_asset_thread_args_t
 {
-	asset_t* asset;
-} asset_texture_thread_args_t;
-
-typedef struct _asset_material_thread_args_t
-{
-	asset_t* asset;
+	model_asset_t* model_asset;
+	material_asset_t* material_asset;
 	struct aiScene const* assimp_scene;
-	uint32_t material_index;
-} asset_material_thread_args_t;
+} material_asset_thread_args_t;
 
-typedef struct _asset_mesh_thread_args_t
+typedef struct _mesh_asset_thread_args_t
 {
-	asset_t* asset;
+	model_asset_t* model_asset;
+	mesh_asset_t* mesh_asset;
 	struct aiScene const* assimp_scene;
-	uint32_t mesh_index;
-} asset_mesh_thread_args_t;
+} mesh_asset_thread_args_t;
 
 ///////////////////////////////////////////////////////////////
 // Public API
@@ -60,19 +41,15 @@ typedef struct _asset_mesh_thread_args_t
 void asset_loader_alloc(void);
 void asset_loader_free(void);
 
-asset_t* asset_loader_load_model(asset_t* parent, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path);
-asset_t* asset_loader_load_texture(asset_t* parent, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path);
+void asset_loader_load_model(char const* name, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path);
+void asset_loader_load_texture(char const* name, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path);
 
 ///////////////////////////////////////////////////////////////
 // Internal API
 ///////////////////////////////////////////////////////////////
 
-void asset_loader_load_materials(asset_t* parent, struct aiScene const* assimp_scene);
-void asset_loader_load_meshes(asset_t* parent, struct aiScene const* assimp_scene);
-
 void asset_loader_print_stats(struct aiScene const* assimp_scene);
 
-void asset_loader_collect_thread_handles_recursive(asset_t* parent, vector_t* assets);
-void asset_loader_wait_sub_assets(asset_t* asset);
+void asset_loader_build_gpu_resources(void);
 
 #endif // VEGA_ENGINE_ASSET_LOADER_H

@@ -1,3 +1,5 @@
+#define WIN32_LEAN_AND_MEAN
+#define NO_GUID_DEFS
 #include <windows.h>
 
 #include <vega/engine/platform/window.h>

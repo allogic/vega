@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 
 #include <vega/engine/engine.h>
@@ -16,13 +17,22 @@ int main(int argc, char** argv, char** envp)
 {
 	TRACY_ZONE_BEGIN
 
-	engine_alloc();
+	platform_window_alloc("VEGA", 1920, 1080);
+
+	asset_loader_alloc();
+
+	asset_loader_load_model("cyberdemon", "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
+
+	scene_stack_alloc();
+
 	scene_push();
 
-	//asset_t* cyberdemon_model = asset_loader_load_model(0, "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
-	//asset_t* cockpit_model = asset_loader_load_model(0, "cockpit", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit\\cockpit2.fbx");
+	scene_t* scene = scene_current();
 
-	platform_window_alloc("VEGA", 1920, 1080);
+	if (scene)
+	{
+		//uint64_t cyberdemon_entity = scene_create_entity_from_model_asset(scene, 0);
+	}
 
 	while (platform_window_should_not_close())
 	{
@@ -32,10 +42,15 @@ int main(int argc, char** argv, char** envp)
 		platform_window_begin_frame();
 	}
 
+	scene_pop();
+
+	scene_stack_free();
+
+	asset_loader_free();
+
 	platform_window_free();
 
-	scene_pop();
-	engine_free();
+	assert(g_heap_allocated_bytes == 0);
 
 	TRACY_ZONE_END
 

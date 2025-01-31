@@ -30,11 +30,4 @@
 #include <vega/engine/vulkan/swap_chain.h>
 #include <vega/engine/vulkan/vulkan.h>
 
-///////////////////////////////////////////////////////////////
-// Public API
-///////////////////////////////////////////////////////////////
-
-void engine_alloc(void);
-void engine_free(void);
-
 #endif // VEGA_ENGINE_H

@@ -22,7 +22,7 @@ VkCommandBuffer vulkan_command_buffer_begin(void)
 
 	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	command_buffer_allocate_info.commandPool = g_vulkan_instance_command_pool;;
+	command_buffer_allocate_info.commandPool = g_vulkan_instance_command_pool;
 	command_buffer_allocate_info.commandBufferCount = 1;
 
 	vkAllocateCommandBuffers(g_vulkan_instance_device, &command_buffer_allocate_info, &command_buffer);

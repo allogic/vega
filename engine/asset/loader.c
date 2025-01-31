@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define WIN32_LEAN_AND_MEAN
+#define NO_GUID_DEFS
 #include <windows.h>
 
 #include <assimp/cfileio.h>
@@ -18,10 +20,6 @@
 #include <vega/core/std/map.h>
 
 #include <vega/engine/asset/loader.h>
-#include <vega/engine/asset/material.h>
-#include <vega/engine/asset/mesh.h>
-#include <vega/engine/asset/model.h>
-#include <vega/engine/asset/texture.h>
 
 #include <vega/engine/renderer/vertex.h>
 
@@ -46,13 +44,33 @@ static LRESULT WINAPI asset_loader_load_texture_thread(PVOID user_param);
 static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param);
 static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param);
 
-static HANDLE s_asset_mutex_handle = 0;
+static HANDLE s_asset_loader_mutex = 0;
+
+static map_t s_asset_loader_models = { 0 };
+static map_t s_asset_loader_textures = { 0 };
+static map_t s_asset_loader_materials = { 0 };
+static map_t s_asset_loader_meshes = { 0 };
+
+static map_t s_asset_loader_staging_models = { 0 };
+static map_t s_asset_loader_staging_textures = { 0 };
+static map_t s_asset_loader_staging_materials = { 0 };
+static map_t s_asset_loader_staging_meshes = { 0 };
 
 void asset_loader_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	s_asset_mutex_handle = CreateMutexA(NULL, 0, NULL);
+	s_asset_loader_mutex = CreateMutexA(NULL, 0, NULL);
+
+	s_asset_loader_models = std_map_alloc();
+	s_asset_loader_textures = std_map_alloc();
+	s_asset_loader_materials = std_map_alloc();
+	s_asset_loader_meshes = std_map_alloc();
+
+	s_asset_loader_staging_models = std_map_alloc();
+	s_asset_loader_staging_textures = std_map_alloc();
+	s_asset_loader_staging_materials = std_map_alloc();
+	s_asset_loader_staging_meshes = std_map_alloc();
 
 	TRACY_ZONE_END
 }
@@ -60,173 +78,176 @@ void asset_loader_free(void)
 {
 	TRACY_ZONE_BEGIN
 
-	CloseHandle(s_asset_mutex_handle);
-
-	TRACY_ZONE_END
-}
-asset_t* asset_loader_load_model(asset_t* parent, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path)
-{
-	TRACY_ZONE_BEGIN
-
-	asset_t* asset = (asset_t*)heap_alloc(sizeof(asset_t));
-	memset(asset, 0, sizeof(asset_t));
-
-	asset->parent = parent;
-	asset->children = std_vector_alloc(sizeof(asset_t*));
-	asset->buffer_type = ASSET_BUFFER_TYPE_MODEL;
-	asset->buffer = heap_alloc(sizeof(asset_model_t));
-	asset->name = std_string_from(file_stem, strlen(file_stem));
-	asset->file_stem = std_string_from(file_stem, strlen(file_stem));
-	asset->file_ext = std_string_from(file_ext, strlen(file_ext));
-	asset->file_root = std_string_from(file_root, strlen(file_root));
-	asset->file_path = std_string_from(file_path, strlen(file_path));
-	asset->loaded = 0;
-	asset->is_loading = 1;
-
-	if (parent)
+	map_iter_t model_iter = std_map_begin(&s_asset_loader_models);
+	while (std_map_end(&model_iter) == 0)
 	{
-		WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-		std_vector_push(&parent->children, &asset);
-		ReleaseMutex(s_asset_mutex_handle);
-	}
+		model_asset_t* model_asset = (model_asset_t*)std_map_value(&model_iter, 0);
 
-	asset_model_thread_args_t* args = (asset_model_thread_args_t*)heap_alloc(sizeof(asset_model_thread_args_t));
+		std_string_free(&model_asset->name);
+		std_string_free(&model_asset->file_stem);
+		std_string_free(&model_asset->file_ext);
+		std_string_free(&model_asset->file_root);
+		std_string_free(&model_asset->file_path);
 
-	args->asset = asset;
-
-	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_model_thread, args, 0, NULL);
-
-	TRACY_ZONE_END
-
-	return asset;
-}
-asset_t* asset_loader_load_texture(asset_t* parent, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path)
-{
-	TRACY_ZONE_BEGIN
-
-	asset_t* asset = (asset_t*)heap_alloc(sizeof(asset_t));
-	memset(asset, 0, sizeof(asset_t));
-
-	asset->parent = parent;
-	asset->children = std_vector_alloc(sizeof(asset_t*));
-	asset->buffer_type = ASSET_BUFFER_TYPE_TEXTURE;
-	asset->buffer = heap_alloc(sizeof(asset_texture_t));
-	asset->name = std_string_from(file_stem, strlen(file_stem));
-	asset->file_stem = std_string_from(file_stem, strlen(file_stem));
-	asset->file_ext = std_string_from(file_ext, strlen(file_ext));
-	asset->file_root = std_string_from(file_root, strlen(file_root));
-	asset->file_path = std_string_from(file_path, strlen(file_path));
-	asset->loaded = 0;
-	asset->is_loading = 1;
-
-	if (parent)
-	{
-		WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-		std_vector_push(&parent->children, &asset);
-		ReleaseMutex(s_asset_mutex_handle);
-	}
-
-	asset_texture_thread_args_t* args = (asset_texture_thread_args_t*)heap_alloc(sizeof(asset_texture_thread_args_t));
-
-	args->asset = asset;
-
-	asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_texture_thread, args, 0, NULL);
-
-	TRACY_ZONE_END
-
-	return asset;
-}
-void asset_loader_load_materials(asset_t* parent, struct aiScene const* assimp_scene)
-{
-	TRACY_ZONE_BEGIN
-
-	uint32_t material_index = 0;
-	while (material_index < assimp_scene->mNumMaterials)
-	{
-		struct aiMaterial const* assimp_material = assimp_scene->mMaterials[material_index];
-		struct aiMaterialProperty const* first_assimp_material_property = assimp_material->mProperties[0];
-
-		VEGA_ASSERT(strcmp(first_assimp_material_property->mKey.data + 1, "mat.name") == 0, "First material property key must be \"mat.name\"");
-		VEGA_ASSERT(first_assimp_material_property->mSemantic == 0, "First material property semantic must be \"0\"");
-		VEGA_ASSERT(first_assimp_material_property->mIndex == 0, "First material property texture index must be \"0\"");
-		VEGA_ASSERT(first_assimp_material_property->mType == aiPTI_String, "First material property type must be \"aiPTI_String\"");
-
-		asset_t* asset = (asset_t*)heap_alloc(sizeof(asset_t));
-		memset(asset, 0, sizeof(asset_t));
-
-		asset->parent = parent;
-		asset->children = std_vector_alloc(sizeof(asset_t*));
-		asset->buffer_type = ASSET_BUFFER_TYPE_MATERIAL;
-		asset->buffer = heap_alloc(sizeof(asset_material_t));
-		asset->name = std_string_from(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, strlen(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES));
-		asset->file_stem = std_string_alloc();
-		asset->file_ext = std_string_alloc();
-		asset->file_root = std_string_alloc();
-		asset->file_path = std_string_alloc();
-		asset->loaded = 0;
-		asset->is_loading = 1;
-
-		if (parent)
+		uint64_t texture_ref_index = 0;
+		uint64_t texture_ref_count = std_vector_count(&model_asset->texture_refs);
+		while (texture_ref_index < texture_ref_count)
 		{
-			WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-			std_vector_push(&parent->children, &asset);
-			ReleaseMutex(s_asset_mutex_handle);
+			string_t* texture_ref = (string_t*)std_vector_get(&model_asset->texture_refs, texture_ref_index);
+
+			std_string_free(texture_ref);
+
+			texture_ref_index++;
 		}
 
-		asset_material_thread_args_t* args = (asset_material_thread_args_t*)heap_alloc(sizeof(asset_material_thread_args_t));
+		uint64_t material_ref_index = 0;
+		uint64_t material_ref_count = std_vector_count(&model_asset->material_refs);
+		while (material_ref_index < material_ref_count)
+		{
+			string_t* material_ref = (string_t*)std_vector_get(&model_asset->material_refs, material_ref_index);
 
-		args->asset = asset;
-		args->assimp_scene = assimp_scene;
-		args->material_index = material_index;
+			std_string_free(material_ref);
 
-		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_material_thread, args, 0, NULL);
+			material_ref_index++;
+		}
 
-		material_index++;
+		uint64_t mesh_ref_index = 0;
+		uint64_t mesh_ref_count = std_vector_count(&model_asset->mesh_refs);
+		while (mesh_ref_index < mesh_ref_count)
+		{
+			string_t* mesh_ref = (string_t*)std_vector_get(&model_asset->mesh_refs, mesh_ref_index);
+
+			std_string_free(mesh_ref);
+
+			mesh_ref_index++;
+		}
+
+		std_vector_free(&model_asset->texture_refs);
+		std_vector_free(&model_asset->material_refs);
+		std_vector_free(&model_asset->mesh_refs);
 	}
+
+	map_iter_t texture_iter = std_map_begin(&s_asset_loader_textures);
+	while (std_map_end(&texture_iter) == 0)
+	{
+		texture_asset_t* texture_asset = (texture_asset_t*)std_map_value(&texture_iter, 0);
+
+		std_string_free(&texture_asset->name);
+		std_string_free(&texture_asset->file_stem);
+		std_string_free(&texture_asset->file_ext);
+		std_string_free(&texture_asset->file_root);
+		std_string_free(&texture_asset->file_path);
+
+		heap_free(texture_asset->buffer);
+
+		vulkan_image_free(&texture_asset->image);
+	}
+
+	map_iter_t material_iter = std_map_begin(&s_asset_loader_materials);
+	while (std_map_end(&material_iter) == 0)
+	{
+		material_asset_t* material_asset = (material_asset_t*)std_map_value(&material_iter, 0);
+
+		std_string_free(&material_asset->name);
+
+		map_iter_t material_property_iter = std_map_begin(&material_asset->properties);
+		while (std_map_end(&material_property_iter) == 0)
+		{
+			material_asset_property_t* material_property = (material_asset_property_t*)std_map_value(&material_property_iter, 0);
+
+			if (material_property->buffer)
+			{
+				heap_free(material_property->buffer); // TODO: handle this null case..
+			}
+		}
+
+		std_map_free(&material_asset->properties);
+	}
+
+	map_iter_t mesh_iter = std_map_begin(&s_asset_loader_meshes);
+	while (std_map_end(&mesh_iter) == 0)
+	{
+		mesh_asset_t* mesh_asset = (mesh_asset_t*)std_map_value(&mesh_iter, 0);
+
+		std_string_free(&mesh_asset->name);
+
+		std_vector_free(&mesh_asset->pbr_vertices);
+		std_fvector32_free(&mesh_asset->pbr_indices);
+
+		vulkan_buffer_free(&mesh_asset->pbr_vertex_buffer);
+		vulkan_buffer_free(&mesh_asset->pbr_index_buffer);
+	}
+
+	std_map_free(&s_asset_loader_models);
+	std_map_free(&s_asset_loader_textures);
+	std_map_free(&s_asset_loader_materials);
+	std_map_free(&s_asset_loader_meshes);
+
+	std_map_free(&s_asset_loader_staging_models);
+	std_map_free(&s_asset_loader_staging_textures);
+	std_map_free(&s_asset_loader_staging_materials);
+	std_map_free(&s_asset_loader_staging_meshes);
+
+	CloseHandle(s_asset_loader_mutex);
 
 	TRACY_ZONE_END
 }
-void asset_loader_load_meshes(asset_t* parent, struct aiScene const* assimp_scene)
+void asset_loader_load_model(char const* name, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path)
 {
 	TRACY_ZONE_BEGIN
 
-	uint32_t mesh_index = 0;
-	while (mesh_index < assimp_scene->mNumMeshes)
-	{
-		struct aiMesh const* assimp_mesh = assimp_scene->mMeshes[mesh_index];
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
 
-		asset_t* asset = (asset_t*)heap_alloc(sizeof(asset_t));
-		memset(asset, 0, sizeof(asset_t));
+	model_asset_t* model_asset = (model_asset_t*)std_map_insert(&s_asset_loader_staging_models, name, strlen(name), 0, sizeof(model_asset_t));
+	model_asset_thread_args_t* model_asset_thread_args = (model_asset_thread_args_t*)heap_alloc(sizeof(model_asset_thread_args_t));
 
-		asset->parent = parent;
-		asset->children = std_vector_alloc(sizeof(asset_t*));
-		asset->buffer_type = ASSET_BUFFER_TYPE_MESH;
-		asset->buffer = heap_alloc(sizeof(asset_mesh_t));
-		asset->name = std_string_from(assimp_mesh->mName.data, assimp_mesh->mName.length);
-		asset->file_stem = std_string_alloc();
-		asset->file_ext = std_string_alloc();
-		asset->file_root = std_string_alloc();
-		asset->file_path = std_string_alloc();
-		asset->loaded = 0;
-		asset->is_loading = 1;
+	ReleaseMutex(s_asset_loader_mutex);
 
-		if (parent)
-		{
-			WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-			std_vector_push(&parent->children, &asset);
-			ReleaseMutex(s_asset_mutex_handle);
-		}
+	model_asset->name = std_string_from(file_stem, strlen(file_stem));
+	model_asset->file_stem = std_string_from(file_stem, strlen(file_stem));
+	model_asset->file_ext = std_string_from(file_ext, strlen(file_ext));
+	model_asset->file_root = std_string_from(file_root, strlen(file_root));
+	model_asset->file_path = std_string_from(file_path, strlen(file_path));
+	model_asset->is_loading = 1;
+	model_asset->texture_refs = std_vector_alloc(sizeof(string_t));
+	model_asset->material_refs = std_vector_alloc(sizeof(string_t));
+	model_asset->mesh_refs = std_vector_alloc(sizeof(string_t));
 
-		asset_mesh_thread_args_t* args = (asset_mesh_thread_args_t*)heap_alloc(sizeof(asset_mesh_thread_args_t));
+	model_asset_thread_args->model_asset = model_asset;
 
-		args->asset = asset;
-		args->assimp_scene = assimp_scene;
-		args->mesh_index = mesh_index;
+	uint64_t thread_handle = (uint64_t)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_model_thread, model_asset_thread_args, 0, NULL);
 
-		asset->thread_handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_mesh_thread, args, 0, NULL);
+	WaitForSingleObject((HANDLE)thread_handle, INFINITE);
 
-		mesh_index++;
-	}
+	asset_loader_build_gpu_resources();
+
+	TRACY_ZONE_END
+}
+void asset_loader_load_texture(char const* name, char const* file_stem, char const* file_ext, char const* file_root, char const* file_path)
+{
+	TRACY_ZONE_BEGIN
+
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+
+	texture_asset_t* texture_asset = (texture_asset_t*)std_map_insert(&s_asset_loader_staging_textures, name, strlen(name), 0, sizeof(texture_asset_t));
+	texture_asset_thread_args_t* texture_asset_thread_args = (texture_asset_thread_args_t*)heap_alloc(sizeof(texture_asset_thread_args_t));
+
+	ReleaseMutex(s_asset_loader_mutex);
+
+	texture_asset->name = std_string_from(file_stem, strlen(file_stem));
+	texture_asset->file_stem = std_string_from(file_stem, strlen(file_stem));
+	texture_asset->file_ext = std_string_from(file_ext, strlen(file_ext));
+	texture_asset->file_root = std_string_from(file_root, strlen(file_root));
+	texture_asset->file_path = std_string_from(file_path, strlen(file_path));
+	texture_asset->is_loading = 1;
+
+	texture_asset_thread_args->texture_asset = texture_asset;
+
+	uint64_t thread_handle = (uint64_t)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_texture_thread, texture_asset_thread_args, 0, NULL);
+
+	WaitForSingleObject((HANDLE)thread_handle, INFINITE);
+
+	asset_loader_build_gpu_resources();
 
 	TRACY_ZONE_END
 }
@@ -367,39 +388,69 @@ void asset_loader_print_stats(struct aiScene const* assimp_scene)
 
 	TRACY_ZONE_END
 }
-void asset_loader_collect_thread_handles_recursive(asset_t* parent, vector_t* assets)
+void asset_loader_build_gpu_resources(void)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t child_index = 0;
-	uint64_t child_count = std_vector_count(&parent->children);
-	while (child_index < child_count)
+	map_iter_t model_iter = std_map_begin(&s_asset_loader_staging_models);
+	while (std_map_end(&model_iter) == 0)
 	{
-		asset_t* child = *(asset_t**)std_vector_get(&parent->children, child_index);
+		uint64_t model_name_size = 0;
 
-		if (child->thread_handle)
-		{
-			std_vector_push(assets, &child->thread_handle);
-		}
+		char* model_name = (char*)std_map_key(&model_iter, &model_name_size);
+		model_asset_t* model_asset = (model_asset_t*)std_map_value(&model_iter, 0);
 
-		asset_loader_collect_thread_handles_recursive(child, assets);
-
-		child_index++;
+		std_map_insert(&s_asset_loader_models, model_name, model_name_size, model_asset, sizeof(model_asset_t));
 	}
 
-	TRACY_ZONE_END
-}
-void asset_loader_wait_sub_assets(asset_t* asset)
-{
-	TRACY_ZONE_BEGIN
+	map_iter_t texture_iter = std_map_begin(&s_asset_loader_staging_textures);
+	while (std_map_end(&texture_iter) == 0)
+	{
+		uint64_t texture_name_size = 0;
 
-	vector_t thread_handles = std_vector_alloc(sizeof(void*));
+		char* texture_name = (char*)std_map_key(&texture_iter, &texture_name_size);
+		texture_asset_t* texture_asset = (texture_asset_t*)std_map_value(&texture_iter, 0);
 
-	asset_loader_collect_thread_handles_recursive(asset, &thread_handles);
+		switch (texture_asset->channels)
+		{
+			case 1: texture_asset->image = vulkan_image_2d_r_alloc(texture_asset->buffer, texture_asset->width, texture_asset->height, VK_FORMAT_R8_SNORM); break;
+			case 2: texture_asset->image = vulkan_image_2d_rg_alloc(texture_asset->buffer, texture_asset->width, texture_asset->height, VK_FORMAT_R8G8_SNORM); break;
+			case 3: texture_asset->image = vulkan_image_2d_rgb_alloc(texture_asset->buffer, texture_asset->width, texture_asset->height, VK_FORMAT_R8G8B8_SNORM); break;
+			case 4: texture_asset->image = vulkan_image_2d_rgba_alloc(texture_asset->buffer, texture_asset->width, texture_asset->height, VK_FORMAT_R8G8B8A8_SNORM); break;
+		}
 
-	WaitForMultipleObjects((uint32_t)std_vector_count(&thread_handles), std_vector_buffer(&thread_handles), 1, INFINITE);
+		std_map_insert(&s_asset_loader_textures, texture_name, texture_name_size, texture_asset, sizeof(texture_asset_t));
+	}
 
-	std_vector_free(&thread_handles);
+	map_iter_t material_iter = std_map_begin(&s_asset_loader_staging_materials);
+	while (std_map_end(&material_iter) == 0)
+	{
+		uint64_t material_name_size = 0;
+
+		char* material_name = (char*)std_map_key(&material_iter, &material_name_size);
+		material_asset_t* material_asset = (material_asset_t*)std_map_value(&material_iter, 0);
+
+		std_map_insert(&s_asset_loader_materials, material_name, material_name_size, material_asset, sizeof(material_asset_t));
+	}
+
+	map_iter_t mesh_iter = std_map_begin(&s_asset_loader_staging_meshes);
+	while (std_map_end(&mesh_iter) == 0)
+	{
+		uint64_t mesh_name_size = 0;
+
+		char* mesh_name = (char*)std_map_key(&mesh_iter, &mesh_name_size);
+		mesh_asset_t* mesh_asset = (mesh_asset_t*)std_map_value(&mesh_iter, 0);
+
+		mesh_asset->pbr_vertex_buffer = vulkan_buffer_vertex_alloc(std_vector_buffer(&mesh_asset->pbr_vertices), std_vector_size(&mesh_asset->pbr_vertices));
+		mesh_asset->pbr_index_buffer = vulkan_buffer_index_alloc(std_fvector32_buffer(&mesh_asset->pbr_indices), std_fvector32_size(&mesh_asset->pbr_indices));
+
+		std_map_insert(&s_asset_loader_meshes, mesh_name, mesh_name_size, mesh_asset, sizeof(texture_asset_t));
+	}
+
+	std_map_clear(&s_asset_loader_staging_models);
+	std_map_clear(&s_asset_loader_staging_textures);
+	std_map_clear(&s_asset_loader_staging_materials);
+	std_map_clear(&s_asset_loader_staging_meshes);
 
 	TRACY_ZONE_END
 }
@@ -408,11 +459,10 @@ static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param)
 	TRACY_THREAD_NAME("Load Model")
 	TRACY_ZONE_BEGIN
 
-	asset_model_thread_args_t* args = (asset_model_thread_args_t*)user_param;
-	asset_t* asset = (asset_t*)args->asset;
-	asset_model_t* asset_model = (asset_model_t*)asset->buffer;
+	model_asset_thread_args_t* model_asset_thread_args = (model_asset_thread_args_t*)user_param;
+	model_asset_t* model_asset = model_asset_thread_args->model_asset;
 
-	memset(asset_model, 0, sizeof(asset_model_t));
+	fvector64_t thread_handles = std_fvector64_alloc();
 
 	uint32_t flags =
 		aiProcess_ValidateDataStructure |
@@ -423,29 +473,97 @@ static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param)
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_PopulateArmatureData;
 
-	struct aiScene const* assimp_scene = aiImportFile(std_string_buffer(&asset->file_path), flags);
+	struct aiScene const* assimp_scene = aiImportFile(std_string_buffer(&model_asset->file_path), flags);
 
 	if (assimp_scene)
 	{
 		if (assimp_scene->mRootNode && (assimp_scene->mFlags & ~(AI_SCENE_FLAGS_INCOMPLETE)))
 		{
-			asset_loader_load_materials(asset, assimp_scene);
-			asset_loader_load_meshes(asset, assimp_scene);
+			uint32_t material_index = 0;
+			while (material_index < assimp_scene->mNumMaterials)
+			{
+				struct aiMaterial const* assimp_material = assimp_scene->mMaterials[material_index];
+				struct aiMaterialProperty const* first_assimp_material_property = assimp_material->mProperties[0];
+
+				VEGA_ASSERT(strcmp(first_assimp_material_property->mKey.data + 1, "mat.name") == 0, "First material property key must be \"mat.name\"");
+				VEGA_ASSERT(first_assimp_material_property->mSemantic == 0, "First material property semantic must be \"0\"");
+				VEGA_ASSERT(first_assimp_material_property->mIndex == 0, "First material property texture index must be \"0\"");
+				VEGA_ASSERT(first_assimp_material_property->mType == aiPTI_String, "First material property type must be \"aiPTI_String\"");
+
+				string_t name = std_string_from(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, strlen(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES));
+				string_t name_ref = std_string_from(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, strlen(first_assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES));
+
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				std_vector_push(&model_asset->material_refs, &name_ref);
+				material_asset_t* material_asset = (material_asset_t*)std_map_insert(&s_asset_loader_staging_materials, std_string_buffer(&name), std_string_size(&name), 0, sizeof(material_asset_t));
+				material_asset_thread_args_t* material_asset_thread_args = (material_asset_thread_args_t*)heap_alloc(sizeof(material_asset_thread_args_t));
+				ReleaseMutex(s_asset_loader_mutex);
+
+				material_asset->name = name;
+				material_asset->material_index = material_index;
+				material_asset->is_loading = 1;
+				material_asset->properties = std_map_alloc();
+
+				material_asset_thread_args->model_asset = model_asset;
+				material_asset_thread_args->material_asset = material_asset;
+				material_asset_thread_args->assimp_scene = assimp_scene;
+
+				uint64_t thread_handle = (uint64_t)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_material_thread, material_asset_thread_args, 0, NULL);
+
+				std_fvector64_push(&thread_handles, thread_handle);
+
+				material_index++;
+			}
+
+			uint32_t mesh_index = 0;
+			while (mesh_index < assimp_scene->mNumMeshes)
+			{
+				struct aiMesh const* assimp_mesh = assimp_scene->mMeshes[mesh_index];
+
+				string_t name = std_string_from(assimp_mesh->mName.data, assimp_mesh->mName.length);
+				string_t name_ref = std_string_from(assimp_mesh->mName.data, assimp_mesh->mName.length);
+
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				std_vector_push(&model_asset->mesh_refs, &name_ref);
+				mesh_asset_t* mesh_asset = (mesh_asset_t*)std_map_insert(&s_asset_loader_staging_meshes, std_string_buffer(&name), std_string_size(&name), 0, sizeof(mesh_asset_t));
+				mesh_asset_thread_args_t* mesh_asset_thread_args = (mesh_asset_thread_args_t*)heap_alloc(sizeof(mesh_asset_thread_args_t));
+				ReleaseMutex(s_asset_loader_mutex);
+
+				mesh_asset->name = name;
+				mesh_asset->mesh_index = mesh_index;
+				mesh_asset->is_loading = 1;
+				mesh_asset->pbr_vertices = std_vector_alloc(sizeof(pbr_vertex_t));
+				mesh_asset->pbr_indices = std_fvector32_alloc();
+
+				mesh_asset_thread_args->model_asset = model_asset;
+				mesh_asset_thread_args->mesh_asset = mesh_asset;
+				mesh_asset_thread_args->assimp_scene = assimp_scene;
+
+				uint64_t thread_handle = (uint64_t)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_mesh_thread, mesh_asset_thread_args, 0, NULL);
+
+				std_fvector64_push(&thread_handles, thread_handle);
+
+				mesh_index++;
+			}
 		}
+	}
 
-		asset_loader_wait_sub_assets(asset);
+	WaitForMultipleObjects((uint32_t)std_fvector64_count(&thread_handles), (HANDLE const*)std_fvector64_buffer(&thread_handles), 1, INFINITE);
 
+	if (assimp_scene)
+	{
 		aiReleaseImport(assimp_scene);
 	}
 
-	asset->loaded = 1;
-	asset->is_loading = 0;
+	std_fvector64_free(&thread_handles);
 
-	WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-	printf("Loaded Model %s\n", std_string_buffer(&asset->name));
-	ReleaseMutex(s_asset_mutex_handle);
+	model_asset->loaded = 1;
+	model_asset->is_loading = 0;
 
-	heap_free(args);
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+	heap_free(model_asset_thread_args);
+	printf("Model loaded\n");
+	ReleaseMutex(s_asset_loader_mutex);
 
 	TRACY_ZONE_END
 
@@ -456,22 +574,40 @@ static LRESULT WINAPI asset_loader_load_texture_thread(PVOID user_param)
 	TRACY_THREAD_NAME("Load Texture")
 	TRACY_ZONE_BEGIN
 
-	asset_texture_thread_args_t* args = (asset_texture_thread_args_t*)user_param;
-	asset_t* asset = (asset_t*)args->asset;
-	asset_texture_t* asset_texture = (asset_texture_t*)asset->buffer;
+	texture_asset_thread_args_t* texture_asset_thread_args = (texture_asset_thread_args_t*)user_param;
+	texture_asset_t* texture_asset = texture_asset_thread_args->texture_asset;
 
-	memset(asset_texture, 0, sizeof(asset_texture_t));
+	fvector64_t thread_handles = std_fvector64_alloc();
 
-	asset_texture->buffer = stbi_load(std_string_buffer(&asset->file_path), &asset_texture->width, &asset_texture->height, &asset_texture->channels, 0);
+	stbi_uc* stb_buffer = stbi_load(std_string_buffer(&texture_asset->file_path), &texture_asset->width, &texture_asset->height, &texture_asset->channels, 0);
 
-	asset->loaded = 1;
-	asset->is_loading = 0;
+	if (stb_buffer)
+	{
+		uint64_t size = texture_asset->width * texture_asset->height * texture_asset->channels;
 
-	WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-	printf("Loaded Texture %s\n", std_string_buffer(&asset->name));
-	ReleaseMutex(s_asset_mutex_handle);
+		WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+		texture_asset->buffer = (uint8_t*)heap_alloc(size);
+		ReleaseMutex(s_asset_loader_mutex);
 
-	heap_free(args);
+		memcpy(texture_asset->buffer, stb_buffer, size);
+	}
+
+	WaitForMultipleObjects((uint32_t)std_fvector64_count(&thread_handles), (HANDLE const*)std_fvector64_buffer(&thread_handles), 1, INFINITE);
+
+	if (stb_buffer)
+	{
+		stbi_image_free(stb_buffer);
+	}
+
+	std_fvector64_free(&thread_handles);
+
+	texture_asset->loaded = 1;
+	texture_asset->is_loading = 0;
+
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+	heap_free(texture_asset_thread_args);
+	printf("Texture loaded\n");
+	ReleaseMutex(s_asset_loader_mutex);
 
 	TRACY_ZONE_END
 
@@ -482,23 +618,23 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 	TRACY_THREAD_NAME("Load Material")
 	TRACY_ZONE_BEGIN
 
-	asset_material_thread_args_t* args = (asset_material_thread_args_t*)user_param;
-	asset_t* asset = (asset_t*)args->asset;
-	asset_material_t* asset_material = (asset_material_t*)asset->buffer;
+	material_asset_thread_args_t* material_asset_thread_args = (material_asset_thread_args_t*)user_param;
+	material_asset_t* material_asset = material_asset_thread_args->material_asset;
+	model_asset_t* model_asset = material_asset_thread_args->model_asset;
+	struct aiScene const* assimp_scene = material_asset_thread_args->assimp_scene;
 
-	memset(asset_material, 0, sizeof(asset_material_t));
+	fvector64_t thread_handles = std_fvector64_alloc();
 
-	asset_material->properties = std_map_alloc();
-
-	struct aiMaterial const* assimp_material = args->assimp_scene->mMaterials[args->material_index];
+	struct aiMaterial const* assimp_material = assimp_scene->mMaterials[material_asset->material_index];
 
 	uint32_t property_index = 1;
 	while (property_index < assimp_material->mNumProperties)
 	{
 		struct aiMaterialProperty const* assimp_material_property = assimp_material->mProperties[property_index];
 
-		asset_material_property_t asset_material_property;
-		memset(&asset_material_property, 0, sizeof(asset_material_property_t));
+		material_asset_property_t material_asset_property = { 0 };
+
+		// TODO: cleanup and map invalid material properties to future PBR material..
 
 		switch (assimp_material_property->mType)
 		{
@@ -506,10 +642,13 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 			{
 				double value = *((float*)assimp_material_property->mData);
 
-				asset_material_property.buffer_type = ASSET_MATERIAL_PROPERTY_TYPE_DOUBLE;
-				asset_material_property.buffer = heap_alloc(sizeof(double));
+				material_asset_property.buffer_type = MATERIAL_ASSET_PROPERTY_TYPE_DOUBLE;
 
-				memcpy(asset_material_property.buffer, &value, sizeof(double));
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				//material_asset_property.buffer = heap_alloc(sizeof(double));
+				ReleaseMutex(s_asset_loader_mutex);
+
+				//memcpy(material_asset_property.buffer, &value, sizeof(double));
 
 				break;
 			}
@@ -517,10 +656,13 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 			{
 				double value = *((double*)assimp_material_property->mData);
 
-				asset_material_property.buffer_type = ASSET_MATERIAL_PROPERTY_TYPE_DOUBLE;
-				asset_material_property.buffer = heap_alloc(sizeof(double));
+				material_asset_property.buffer_type = MATERIAL_ASSET_PROPERTY_TYPE_DOUBLE;
 
-				memcpy(asset_material_property.buffer, &value, sizeof(double));
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				//material_asset_property.buffer = heap_alloc(sizeof(double));
+				ReleaseMutex(s_asset_loader_mutex);
+
+				//memcpy(material_asset_property.buffer, &value, sizeof(double));
 
 				break;
 			}
@@ -528,30 +670,45 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 			{
 				if ((assimp_material_property->mSemantic > aiTextureType_NONE) && (assimp_material_property->mSemantic <= AI_TEXTURE_TYPE_MAX) && (assimp_material_property->mSemantic != aiTextureType_UNKNOWN))
 				{
-					string_t file_path = std_string_from(std_string_buffer(&asset->parent->file_root), std_string_size(&asset->parent->file_root));
+					string_t file_root = std_string_from(std_string_buffer(&model_asset->file_root), std_string_size(&model_asset->file_root));
+					string_t file_path = std_string_from(std_string_buffer(&model_asset->file_root), std_string_size(&model_asset->file_root));
 
-					if (asset->parent)
-					{
-						std_string_append(&file_path, "\\", 1);
-						std_string_append(&file_path, assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
-					}
+					std_string_append(&file_path, "/", 1);
+					std_string_append(&file_path, assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
 
 					string_t file_stem = fs_resolve_file_stem_from_path(std_string_buffer(&file_path), std_string_size(&file_path));
 					string_t file_ext = fs_resolve_file_ext_from_path(std_string_buffer(&file_path), std_string_size(&file_path));
 
-					asset_loader_load_texture(asset->parent, std_string_buffer(&file_stem), std_string_buffer(&file_ext), std_string_buffer(&asset->parent->file_root), std_string_buffer(&file_path));
+					string_t name = std_string_from(std_string_buffer(&file_stem), std_string_size(&file_stem));
+					string_t name_ref = std_string_from(std_string_buffer(&file_stem), std_string_size(&file_stem));
 
-					std_string_free(&file_stem);
-					std_string_free(&file_ext);
-					std_string_free(&file_path);
+					WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+					std_vector_push(&model_asset->texture_refs, &name_ref);
+					texture_asset_t* texture_asset = (texture_asset_t*)std_map_insert(&s_asset_loader_staging_textures, std_string_buffer(&name), std_string_size(&name), 0, sizeof(texture_asset_t));
+					texture_asset_thread_args_t* texture_asset_thread_args = (texture_asset_thread_args_t*)heap_alloc(sizeof(texture_asset_thread_args_t));
+					ReleaseMutex(s_asset_loader_mutex);
 
-					break;
+					texture_asset->name = name;
+					texture_asset->file_stem = file_stem;
+					texture_asset->file_ext = file_ext;
+					texture_asset->file_root = file_root;
+					texture_asset->file_path = file_path;
+					texture_asset->is_loading = 1;
+
+					texture_asset_thread_args->texture_asset = texture_asset;
+
+					uint64_t thread_handle = (uint64_t)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)asset_loader_load_texture_thread, texture_asset_thread_args, 0, NULL);
+
+					std_fvector64_push(&thread_handles, thread_handle);
 				}
 
-				asset_material_property.buffer_type = ASSET_MATERIAL_PROPERTY_TYPE_STRING;
-				asset_material_property.buffer = heap_alloc(assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
+				material_asset_property.buffer_type = MATERIAL_ASSET_PROPERTY_TYPE_STRING;
 
-				memcpy(asset_material_property.buffer, &assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				//material_asset_property.buffer = heap_alloc(assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
+				ReleaseMutex(s_asset_loader_mutex);
+
+				//memcpy(material_asset_property.buffer, &assimp_material_property->mData + ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES, assimp_material_property->mDataLength - ASSIMP_MATERIAL_PROPERTY_DATA_ERROR_BYTES);
 
 				break;
 			}
@@ -559,37 +716,46 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 			{
 				int32_t value = *((int32_t*)assimp_material_property->mData);
 
-				asset_material_property.buffer_type = ASSET_MATERIAL_PROPERTY_TYPE_INTEGER;
-				asset_material_property.buffer = heap_alloc(sizeof(int32_t));
+				material_asset_property.buffer_type = MATERIAL_ASSET_PROPERTY_TYPE_INTEGER;
 
-				memcpy(asset_material_property.buffer, &value, sizeof(int32_t));
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				//material_asset_property.buffer = heap_alloc(sizeof(int32_t));
+				ReleaseMutex(s_asset_loader_mutex);
+
+				//memcpy(material_asset_property.buffer, &value, sizeof(int32_t));
 
 				break;
 			}
 			case aiPTI_Buffer:
 			{
-				asset_material_property.buffer_type = ASSET_MATERIAL_PROPERTY_TYPE_BUFFER;
-				asset_material_property.buffer = heap_alloc(assimp_material_property->mDataLength);
+				material_asset_property.buffer_type = MATERIAL_ASSET_PROPERTY_TYPE_BUFFER;
 
-				memcpy(asset_material_property.buffer, &assimp_material_property->mData, assimp_material_property->mDataLength);
+				WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+				//material_asset_property.buffer = heap_alloc(assimp_material_property->mDataLength);
+				ReleaseMutex(s_asset_loader_mutex);
+
+				//memcpy(material_asset_property.buffer, &assimp_material_property->mData, assimp_material_property->mDataLength);
 
 				break;
 			}
 		}
 
-		std_map_insert(&asset_material->properties, assimp_material_property->mKey.data, assimp_material_property->mKey.length, &asset_material_property, sizeof(asset_material_property_t));
+		std_map_insert(&material_asset->properties, assimp_material_property->mKey.data, assimp_material_property->mKey.length, &material_asset_property, sizeof(material_asset_property_t));
 
 		property_index++;
 	}
 
-	asset->loaded = 1;
-	asset->is_loading = 0;
+	WaitForMultipleObjects((uint32_t)std_fvector64_count(&thread_handles), (HANDLE const*)std_fvector64_buffer(&thread_handles), 1, INFINITE);
 
-	WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-	printf("Loaded Material %s\n", std_string_buffer(&asset->name));
-	ReleaseMutex(s_asset_mutex_handle);
+	std_fvector64_free(&thread_handles);
 
-	heap_free(args);
+	material_asset->loaded = 1;
+	material_asset->is_loading = 0;
+
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+	heap_free(material_asset_thread_args);
+	printf("Material loaded\n");
+	ReleaseMutex(s_asset_loader_mutex);
 
 	TRACY_ZONE_END
 
@@ -600,79 +766,74 @@ static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param)
 	TRACY_THREAD_NAME("Load Mesh")
 	TRACY_ZONE_BEGIN
 
-	asset_mesh_thread_args_t* args = (asset_mesh_thread_args_t*)user_param;
-	asset_t* asset = (asset_t*)args->asset;
-	asset_mesh_t* asset_mesh = (asset_mesh_t*)asset->buffer;
+	mesh_asset_thread_args_t* mesh_asset_thread_args = (mesh_asset_thread_args_t*)user_param;
+	mesh_asset_t* mesh_asset = mesh_asset_thread_args->mesh_asset;
+	model_asset_t* model_asset = mesh_asset_thread_args->model_asset;
+	struct aiScene const* assimp_scene = mesh_asset_thread_args->assimp_scene;
 
-	memset(asset_mesh, 0, sizeof(asset_mesh_t));
+	fvector64_t thread_handles = std_fvector64_alloc();
 
-	asset_mesh->pbr_vertices = std_vector_alloc(sizeof(pbr_vertex_t));
-	asset_mesh->pbr_indices = std_fvector32_alloc();
-
-	struct aiMesh const* assimp_mesh = args->assimp_scene->mMeshes[args->mesh_index];
+	struct aiMesh const* assimp_mesh = assimp_scene->mMeshes[mesh_asset->mesh_index];
 
 	uint32_t face_index = 0;
 	while (face_index < assimp_mesh->mNumFaces)
 	{
 		struct aiFace const* assimp_mesh_face = &assimp_mesh->mFaces[face_index];
 
-		pbr_vertex_t pbr_vertex;
-
 		uint32_t element_index = 0;
 		while (element_index < assimp_mesh_face->mNumIndices)
 		{
-			uint32_t vertex_index = assimp_mesh_face->mIndices[element_index];
-
-			memset(&pbr_vertex, 0, sizeof(pbr_vertex_t));
+			pbr_vertex_t pbr_vertex = { 0 };
+			uint32_t pbr_index = assimp_mesh_face->mIndices[element_index];
 
 			if (assimp_mesh->mVertices)
 			{
-				pbr_vertex.position.x = assimp_mesh->mVertices[vertex_index].x;
-				pbr_vertex.position.y = assimp_mesh->mVertices[vertex_index].y;
-				pbr_vertex.position.z = assimp_mesh->mVertices[vertex_index].z;
+				pbr_vertex.position.x = assimp_mesh->mVertices[pbr_index].x;
+				pbr_vertex.position.y = assimp_mesh->mVertices[pbr_index].y;
+				pbr_vertex.position.z = assimp_mesh->mVertices[pbr_index].z;
 				pbr_vertex.position.w = 0.0;
 			}
 
 			if (assimp_mesh->mNormals)
 			{
-				pbr_vertex.normal.x = assimp_mesh->mNormals[vertex_index].x;
-				pbr_vertex.normal.y = assimp_mesh->mNormals[vertex_index].y;
-				pbr_vertex.normal.z = assimp_mesh->mNormals[vertex_index].z;
+				pbr_vertex.normal.x = assimp_mesh->mNormals[pbr_index].x;
+				pbr_vertex.normal.y = assimp_mesh->mNormals[pbr_index].y;
+				pbr_vertex.normal.z = assimp_mesh->mNormals[pbr_index].z;
 				pbr_vertex.normal.w = 0.0;
 			}
 
 			if (assimp_mesh->mTangents)
 			{
-				pbr_vertex.tangent.x = assimp_mesh->mTangents[vertex_index].x;
-				pbr_vertex.tangent.y = assimp_mesh->mTangents[vertex_index].y;
-				pbr_vertex.tangent.z = assimp_mesh->mTangents[vertex_index].z;
+				pbr_vertex.tangent.x = assimp_mesh->mTangents[pbr_index].x;
+				pbr_vertex.tangent.y = assimp_mesh->mTangents[pbr_index].y;
+				pbr_vertex.tangent.z = assimp_mesh->mTangents[pbr_index].z;
 				pbr_vertex.tangent.w = 0.0;
 			}
 
 			if (assimp_mesh->mBitangents)
 			{
-				pbr_vertex.bitangent.x = assimp_mesh->mBitangents[vertex_index].x;
-				pbr_vertex.bitangent.y = assimp_mesh->mBitangents[vertex_index].y;
-				pbr_vertex.bitangent.z = assimp_mesh->mBitangents[vertex_index].z;
+				pbr_vertex.bitangent.x = assimp_mesh->mBitangents[pbr_index].x;
+				pbr_vertex.bitangent.y = assimp_mesh->mBitangents[pbr_index].y;
+				pbr_vertex.bitangent.z = assimp_mesh->mBitangents[pbr_index].z;
 				pbr_vertex.bitangent.w = 0.0;
 			}
 
 			if (assimp_mesh->mColors[0])
 			{
-				pbr_vertex.color_channel_0.x = assimp_mesh->mColors[0][vertex_index].r;
-				pbr_vertex.color_channel_0.y = assimp_mesh->mColors[0][vertex_index].g;
-				pbr_vertex.color_channel_0.z = assimp_mesh->mColors[0][vertex_index].b;
-				pbr_vertex.color_channel_0.w = assimp_mesh->mColors[0][vertex_index].a;
+				pbr_vertex.color_channel_0.x = assimp_mesh->mColors[0][pbr_index].r;
+				pbr_vertex.color_channel_0.y = assimp_mesh->mColors[0][pbr_index].g;
+				pbr_vertex.color_channel_0.z = assimp_mesh->mColors[0][pbr_index].b;
+				pbr_vertex.color_channel_0.w = assimp_mesh->mColors[0][pbr_index].a;
 			}
 
 			if (assimp_mesh->mTextureCoords[0])
 			{
-				pbr_vertex.texcoord_channel_0.x = assimp_mesh->mTextureCoords[0][vertex_index].x;
-				pbr_vertex.texcoord_channel_0.y = assimp_mesh->mTextureCoords[0][vertex_index].y;
+				pbr_vertex.texcoord_channel_0.x = assimp_mesh->mTextureCoords[0][pbr_index].x;
+				pbr_vertex.texcoord_channel_0.y = assimp_mesh->mTextureCoords[0][pbr_index].y;
 			}
 
-			std_vector_push(&asset_mesh->pbr_vertices, &pbr_vertex);
-			std_fvector32_push(&asset_mesh->pbr_indices, vertex_index);
+			std_vector_push(&mesh_asset->pbr_vertices, &pbr_vertex);
+			std_fvector32_push(&mesh_asset->pbr_indices, pbr_index);
 
 			element_index++;
 		}
@@ -680,14 +841,17 @@ static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param)
 		face_index++;
 	}
 
-	asset->loaded = 1;
-	asset->is_loading = 0;
+	WaitForMultipleObjects((uint32_t)std_fvector64_count(&thread_handles), (HANDLE const*)std_fvector64_buffer(&thread_handles), 1, INFINITE);
 
-	WaitForSingleObject(s_asset_mutex_handle, INFINITE);
-	printf("Loaded Mesh %s\n", std_string_buffer(&asset->name));
-	ReleaseMutex(s_asset_mutex_handle);
+	std_fvector64_free(&thread_handles);
 
-	heap_free(args);
+	mesh_asset->loaded = 1;
+	mesh_asset->is_loading = 0;
+
+	WaitForSingleObject(s_asset_loader_mutex, INFINITE);
+	heap_free(mesh_asset_thread_args);
+	printf("Mesh loaded\n");
+	ReleaseMutex(s_asset_loader_mutex);
 
 	TRACY_ZONE_END
 

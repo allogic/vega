@@ -20,17 +20,27 @@ typedef struct _map_t
 	uint64_t pair_count;
 } map_t;
 
+typedef struct _map_iter_t
+{
+	map_pair_t* curr;
+	map_t* map;
+	uint64_t table_index;
+} map_iter_t;
+
 ///////////////////////////////////////////////////////////////
 // Public API
 ///////////////////////////////////////////////////////////////
 
 map_t std_map_alloc(void);
-uint8_t std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size);
-uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size, void* value, uint64_t value_size);
+void* std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size);
+uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size);
 uint8_t std_map_contains(map_t* map, void const* key, uint64_t key_size);
 uint64_t std_map_count(map_t* map);
-void* std_map_at(map_t* map, void const* key, uint64_t key_size);
 void std_map_clear(map_t* map);
+map_iter_t std_map_begin(map_t* map);
+void* std_map_key(map_iter_t* iter, uint64_t* key_size);
+void* std_map_value(map_iter_t* iter, uint64_t* value_size);
+uint8_t std_map_end(map_iter_t* iter);
 void std_map_free(map_t* map);
 
 ///////////////////////////////////////////////////////////////

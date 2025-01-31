@@ -5,10 +5,18 @@
 
 #include <vega/core/core.h>
 
-typedef struct _asset_mesh_t
+#include <vega/engine/vulkan/buffer.h>
+
+typedef struct _mesh_asset_t
 {
+	string_t name;
+	uint32_t mesh_index;
+	uint8_t loaded;
+	uint8_t is_loading;
 	vector_t pbr_vertices;
 	fvector32_t pbr_indices;
-} asset_mesh_t;
+	buffer_t pbr_vertex_buffer;
+	buffer_t pbr_index_buffer;
+} mesh_asset_t;
 
 #endif // VEGA_ENGINE_ASSET_MESH_H

@@ -31,9 +31,9 @@
 	#define VEGA_PBR_VERTEX_BINDING_ID (0U)
 #endif // VEGA_PBR_VERTEX_BINDING_ID
 
-static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
-static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
-static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity, vector_t* view);
+static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity);
+static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity);
+static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity);
 
 static buffer_t s_vulkan_renderer_time_info_buffer = { 0 };
 static buffer_t s_vulkan_renderer_screen_info_buffer = { 0 };
@@ -116,9 +116,6 @@ void vulkan_renderer_alloc(void)
 	s_vulkan_renderer_pbr_pipeline_layout = vulkan_pipeline_layout_alloc(s_vulkan_renderer_pbr_descriptor_set_layout, 0, 0);
 	s_vulkan_renderer_pbr_pipeline = vulkan_pipeline_graphic_alloc(s_vulkan_renderer_pbr_pipeline_layout, s_vulkan_renderer_render_pass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, s_vulkan_renderer_pbr_vertex_shader_file_path, s_vulkan_renderer_pbr_fragment_shader_file_path, s_vulkan_renderer_pbr_vertex_input_binding_descriptions, ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_binding_descriptions), s_vulkan_renderer_pbr_vertex_input_attribute_descriptions, ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_attribute_descriptions));
 
-	std_ecs_query_alloc(&s_vulkan_renderer_camera_query);
-	std_ecs_query_alloc(&s_vulkan_renderer_render_query);
-
 	TRACY_ZONE_END
 }
 void vulkan_renderer_render(void)
@@ -197,9 +194,6 @@ void vulkan_renderer_render(void)
 void vulkan_renderer_free(void)
 {
 	TRACY_ZONE_BEGIN
-
-	std_ecs_query_free(&s_vulkan_renderer_render_query);
-	std_ecs_query_free(&s_vulkan_renderer_camera_query);
 
 	vulkan_pipeline_free(s_vulkan_renderer_pbr_pipeline);
 	vulkan_pipeline_layout_free(s_vulkan_renderer_pbr_pipeline_layout);
@@ -627,12 +621,12 @@ void vulkan_renderer_frame_buffer_free(void)
 
 	TRACY_ZONE_END
 }
-static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 
-	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM, view);
-	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_CAMERA, view);
+	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM);
+	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_CAMERA);
 
 	switch (camera->mode)
 	{
@@ -665,11 +659,11 @@ static void vulkan_renderer_update_projection_info_proc(ecs_t* ecs, uint64_t ent
 
 	TRACY_ZONE_END
 }
-static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 
-	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE, view);
+	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE);
 
 	// TODO: support more workflows..
 
@@ -743,11 +737,11 @@ static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t
 
 	TRACY_ZONE_END
 }
-static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity, vector_t* view)
+static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 
-	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE, view);
+	renderable_t* renderable = (renderable_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_RENDERABLE);
 
 	buffer_t* vertex_buffer = renderable->mesh->vertex_buffer;
 	buffer_t* index_buffer = renderable->mesh->index_buffer;
