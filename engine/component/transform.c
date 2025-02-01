@@ -14,9 +14,7 @@ transform_t transform_identity(void)
 {
 	TRACY_ZONE_BEGIN
 
-	transform_t transform;
-	memset(&transform, 0, sizeof(transform_t));
-
+	transform_t transform = { 0 };
 	transform.parent = 0;
 	transform.local_right = g_world_right;
 	transform.local_up = g_world_up;

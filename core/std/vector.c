@@ -27,9 +27,7 @@ vector_t std_vector_alloc(uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN
 
-	vector_t vector;
-	memset(&vector, 0, sizeof(vector_t));
-
+	vector_t vector = { 0 };
 	vector.buffer = (uint8_t*)heap_alloc(ALIGN_UP_BY(VECTOR_BUFFER_CAPACITY, VECTOR_BUFFER_ALIGNMENT) * value_size);
 	vector.swap_buffer = (uint8_t*)heap_alloc(value_size);
 	vector.value_size = value_size;

@@ -161,14 +161,10 @@ buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPr
 {
 	TRACY_ZONE_BEGIN
 
-	buffer_t buffer;
-	memset(&buffer, 0, sizeof(buffer_t));
-
+	buffer_t buffer = { 0 };
 	buffer.size = size;
 
-	VkBufferCreateInfo buffer_create_info;
-	memset(&buffer_create_info, 0, sizeof(VkBufferCreateInfo));
-
+	VkBufferCreateInfo buffer_create_info = { 0 };
 	buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	buffer_create_info.size = size;
 	buffer_create_info.usage = usage;
@@ -179,9 +175,7 @@ buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPr
 	VkMemoryRequirements memory_requirements;
 	vkGetBufferMemoryRequirements(g_vulkan_instance_device, buffer.buffer, &memory_requirements);
 
-	VkMemoryAllocateInfo memory_allocate_info;
-	memset(&memory_allocate_info, 0, sizeof(VkMemoryAllocateInfo));
-
+	VkMemoryAllocateInfo memory_allocate_info = { 0 };
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_allocate_info.allocationSize = memory_requirements.size;
 	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, memory_properties);
@@ -212,9 +206,7 @@ void vulkan_buffer_copy_to_buffer(buffer_t* buffer, buffer_t* target, VkCommandB
 {
 	TRACY_ZONE_BEGIN
 
-	VkBufferCopy buffer_copy;
-	memset(&buffer_copy, 0, sizeof(VkBufferCopy));
-
+	VkBufferCopy buffer_copy = { 0 };
 	buffer_copy.size = buffer->size;
 
 	vkCmdCopyBuffer(command_buffer, buffer->buffer, target->buffer, 1, &buffer_copy);
@@ -225,9 +217,7 @@ void vulkan_buffer_copy_to_image(buffer_t* buffer, image_t* target, VkCommandBuf
 {
 	TRACY_ZONE_BEGIN
 
-	VkBufferImageCopy buffer_image_copy;
-	memset(&buffer_image_copy, 0, sizeof(VkBufferImageCopy));
-
+	VkBufferImageCopy buffer_image_copy = { 0 };
 	buffer_image_copy.bufferOffset = 0;
 	buffer_image_copy.bufferRowLength = 0;
 	buffer_image_copy.bufferImageHeight = 0;

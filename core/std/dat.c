@@ -31,9 +31,7 @@ dat_t std_dat_alloc(uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN
 
-	dat_t dat;
-	memset(&dat, 0, sizeof(dat_t));
-
+	dat_t dat = { 0 };
 	dat.pages = 0;
 	dat.page_size = 0;
 	dat.page_count = 0;

@@ -23,12 +23,10 @@ timer_t timer_init(void)
 {
 	TRACY_ZONE_BEGIN
 
-	timer_t timer;
-	memset(&timer, 0, sizeof(timer_t));
-
 	LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
 
+	timer_t timer = { 0 };
 	timer.freq = (double)freq.QuadPart;
 	timer.begin = 0.0;
 	timer.ns = 0.0;

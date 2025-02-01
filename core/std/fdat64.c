@@ -31,9 +31,7 @@ fdat64_t std_fdat64_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	fdat64_t dat;
-	memset(&dat, 0, sizeof(fdat64_t));
-
+	fdat64_t dat = { 0 };
 	dat.pages = 0;
 	dat.page_size = 0;
 	dat.page_count = 0;

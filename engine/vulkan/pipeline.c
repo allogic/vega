@@ -43,9 +43,7 @@ VkDescriptorPool vulkan_pipeline_descriptor_pool_alloc(uint32_t pool_count, VkDe
 
 		if (descriptor_count > 0)
 		{
-			VkDescriptorPoolSize descriptor_pool_size;
-			memset(&descriptor_pool_size, 0, sizeof(VkDescriptorPoolSize));
-
+			VkDescriptorPoolSize descriptor_pool_size = { 0 };
 			descriptor_pool_size.type = (VkDescriptorType)descriptor_type_index;
 			descriptor_pool_size.descriptorCount = descriptor_count;
 
@@ -55,9 +53,7 @@ VkDescriptorPool vulkan_pipeline_descriptor_pool_alloc(uint32_t pool_count, VkDe
 		descriptor_type_index++;
 	}
 
-	VkDescriptorPoolCreateInfo descriptor_pool_create_info;
-	memset(&descriptor_pool_create_info, 0, sizeof(VkDescriptorPoolCreateInfo));
-
+	VkDescriptorPoolCreateInfo descriptor_pool_create_info = { 0 };
 	descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptor_pool_create_info.pPoolSizes = std_vector_buffer(&descriptor_pool_sizes);
 	descriptor_pool_create_info.poolSizeCount = (uint32_t)std_vector_count(&descriptor_pool_sizes);
@@ -91,16 +87,12 @@ VkDescriptorSetLayout vulkan_pipeline_descriptor_set_layout_alloc(VkDescriptorSe
 		descriptor_binding_flags_index++;
 	}
 
-	VkDescriptorSetLayoutBindingFlagsCreateInfo descriptor_set_layout_binding_flags_create_info;
-	memset(&descriptor_set_layout_binding_flags_create_info, 0, sizeof(VkDescriptorSetLayoutBindingFlagsCreateInfo));
-
+	VkDescriptorSetLayoutBindingFlagsCreateInfo descriptor_set_layout_binding_flags_create_info = { 0 };
 	descriptor_set_layout_binding_flags_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
 	descriptor_set_layout_binding_flags_create_info.pBindingFlags = std_fvector32_buffer(&descriptor_binding_flags);
 	descriptor_set_layout_binding_flags_create_info.bindingCount = (uint32_t)std_fvector32_count(&descriptor_binding_flags);
 
-	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
-	memset(&descriptor_set_layout_create_info, 0, sizeof(VkDescriptorSetLayoutCreateInfo));
-
+	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info = { 0 };
 	descriptor_set_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descriptor_set_layout_create_info.pBindings = descriptor_set_layout_bindings;
 	descriptor_set_layout_create_info.bindingCount = (uint32_t)descriptor_set_layout_binding_count;
@@ -120,9 +112,7 @@ VkPipelineLayout vulkan_pipeline_layout_alloc(VkDescriptorSetLayout descriptor_s
 
 	VkPipelineLayout pipeline_layout = 0;
 
-	VkPipelineLayoutCreateInfo pipeline_layout_create_info;
-	memset(&pipeline_layout_create_info, 0, sizeof(VkPipelineLayoutCreateInfo));
-
+	VkPipelineLayoutCreateInfo pipeline_layout_create_info = { 0 };
 	pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_create_info.setLayoutCount = 1;
 	pipeline_layout_create_info.pSetLayouts = &descriptor_set_layout;
@@ -154,9 +144,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	VkShaderModule fragment_module = 0;
 
 	{
-		VkShaderModuleCreateInfo shader_module_create_info;
-		memset(&shader_module_create_info, 0, sizeof(VkShaderModuleCreateInfo));
-
+		VkShaderModuleCreateInfo shader_module_create_info = { 0 };
 		shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		shader_module_create_info.codeSize = vertex_shader_size;
 		shader_module_create_info.pCode = (uint32_t const*)vertex_shader_bytes;
@@ -165,9 +153,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	}
 
 	{
-		VkShaderModuleCreateInfo shader_module_create_info;
-		memset(&shader_module_create_info, 0, sizeof(VkShaderModuleCreateInfo));
-
+		VkShaderModuleCreateInfo shader_module_create_info = { 0 };
 		shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		shader_module_create_info.codeSize = fragment_shader_size;
 		shader_module_create_info.pCode = (uint32_t const*)fragment_shader_bytes;
@@ -175,17 +161,13 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 		vkCreateShaderModule(g_vulkan_instance_device, &shader_module_create_info, 0, &fragment_module);
 	}
 
-	VkPipelineShaderStageCreateInfo vertex_shader_stage_create_info;
-	memset(&vertex_shader_stage_create_info, 0, sizeof(VkPipelineShaderStageCreateInfo));
-
+	VkPipelineShaderStageCreateInfo vertex_shader_stage_create_info = { 0 };
 	vertex_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertex_shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 	vertex_shader_stage_create_info.module = vertex_module;
 	vertex_shader_stage_create_info.pName = "main";
 
-	VkPipelineShaderStageCreateInfo fragment_shader_stage_create_info;
-	memset(&fragment_shader_stage_create_info, 0, sizeof(VkPipelineShaderStageCreateInfo));
-
+	VkPipelineShaderStageCreateInfo fragment_shader_stage_create_info = { 0 };
 	fragment_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragment_shader_stage_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	fragment_shader_stage_create_info.module = fragment_module;
@@ -193,25 +175,19 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 
 	VkPipelineShaderStageCreateInfo shader_stages[] = { vertex_shader_stage_create_info, fragment_shader_stage_create_info };
 
-	VkPipelineVertexInputStateCreateInfo vertex_input_create_info;
-	memset(&vertex_input_create_info, 0, sizeof(VkPipelineVertexInputStateCreateInfo));
-
+	VkPipelineVertexInputStateCreateInfo vertex_input_create_info = { 0 };
 	vertex_input_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertex_input_create_info.pVertexBindingDescriptions = vertex_input_binding_descriptions;
 	vertex_input_create_info.vertexBindingDescriptionCount = (uint32_t)vertex_input_binding_description_count;
 	vertex_input_create_info.pVertexAttributeDescriptions = vertex_input_attribute_descriptions;
 	vertex_input_create_info.vertexAttributeDescriptionCount = (uint32_t)vertex_input_attribute_description_count;
 
-	VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info;
-	memset(&input_assembly_create_info, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
-
+	VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info = { 0 };
 	input_assembly_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly_create_info.topology = topology;
 	input_assembly_create_info.primitiveRestartEnable = 0;
 
-	VkViewport viewport;
-	memset(&viewport, 0, sizeof(VkViewport));
-
+	VkViewport viewport = { 0 };
 	viewport.x = 0.0F;
 	viewport.y = 0.0F;
 	viewport.width = (float)g_vulkan_instance_surface_capabilities.currentExtent.width;
@@ -219,26 +195,20 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 
-	VkRect2D scissor;
-	memset(&scissor, 0, sizeof(VkRect2D));
-
+	VkRect2D scissor = { 0 };
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 	scissor.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;
 	scissor.extent.height = g_vulkan_instance_surface_capabilities.currentExtent.height;
 
-	VkPipelineViewportStateCreateInfo viewport_state_create_info;
-	memset(&viewport_state_create_info, 0, sizeof(VkPipelineViewportStateCreateInfo));
-
+	VkPipelineViewportStateCreateInfo viewport_state_create_info = { 0 };
 	viewport_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewport_state_create_info.viewportCount = 1;
 	viewport_state_create_info.pViewports = &viewport;
 	viewport_state_create_info.scissorCount = 1;
 	viewport_state_create_info.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizer_create_info;
-	memset(&rasterizer_create_info, 0, sizeof(VkPipelineRasterizationStateCreateInfo));
-
+	VkPipelineRasterizationStateCreateInfo rasterizer_create_info = { 0 };
 	rasterizer_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer_create_info.depthClampEnable = 0;
 	rasterizer_create_info.rasterizerDiscardEnable = 0;
@@ -251,9 +221,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	rasterizer_create_info.depthBiasClamp = 0.0F;
 	rasterizer_create_info.depthBiasSlopeFactor = 0.0F;
 
-	VkPipelineMultisampleStateCreateInfo multisampling_create_info;
-	memset(&multisampling_create_info, 0, sizeof(VkPipelineMultisampleStateCreateInfo));
-
+	VkPipelineMultisampleStateCreateInfo multisampling_create_info = { 0 };
 	multisampling_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling_create_info.sampleShadingEnable = 0;
 	multisampling_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -262,9 +230,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	multisampling_create_info.alphaToCoverageEnable = 0;
 	multisampling_create_info.alphaToOneEnable = 0;
 
-	VkPipelineColorBlendAttachmentState color_blend_attachment;
-	memset(&color_blend_attachment, 0, sizeof(VkPipelineColorBlendAttachmentState));
-
+	VkPipelineColorBlendAttachmentState color_blend_attachment = { 0 };
 	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	color_blend_attachment.blendEnable = 1;
 	color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -274,9 +240,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info;
-	memset(&depth_stencil_state_create_info, 0, sizeof(VkPipelineDepthStencilStateCreateInfo));
-
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info = { 0 };
 	depth_stencil_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depth_stencil_state_create_info.depthTestEnable = 0; // TODO: why is this not working..
 	depth_stencil_state_create_info.depthWriteEnable = 1;
@@ -284,9 +248,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	depth_stencil_state_create_info.depthBoundsTestEnable = 0;
 	depth_stencil_state_create_info.stencilTestEnable = 0;
 
-	VkPipelineColorBlendStateCreateInfo color_blend_create_info;
-	memset(&color_blend_create_info, 0, sizeof(VkPipelineColorBlendStateCreateInfo));
-
+	VkPipelineColorBlendStateCreateInfo color_blend_create_info = { 0 };
 	color_blend_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	color_blend_create_info.logicOpEnable = 0;
 	color_blend_create_info.logicOp = VK_LOGIC_OP_COPY;
@@ -299,16 +261,12 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 
 	VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-	VkPipelineDynamicStateCreateInfo dynamic_state_create_info;
-	memset(&dynamic_state_create_info, 0, sizeof(VkPipelineDynamicStateCreateInfo));
-
+	VkPipelineDynamicStateCreateInfo dynamic_state_create_info = { 0 };
 	dynamic_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamic_state_create_info.pDynamicStates = dynamic_states;
 	dynamic_state_create_info.dynamicStateCount = (uint32_t)ARRAY_COUNT(dynamic_states);
 
-	VkGraphicsPipelineCreateInfo pipeline_create_info;
-	memset(&pipeline_create_info, 0, sizeof(VkGraphicsPipelineCreateInfo));
-
+	VkGraphicsPipelineCreateInfo pipeline_create_info = { 0 };
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipeline_create_info.pStages = shader_stages;
 	pipeline_create_info.stageCount = (uint32_t)ARRAY_COUNT(shader_stages);
@@ -351,26 +309,20 @@ VkPipeline vulkan_pipeline_pipeline_alloc(VkPipelineLayout pipeline_layout, char
 
 	VkShaderModule compute_module = 0;
 
-	VkShaderModuleCreateInfo shader_module_create_info;
-	memset(&shader_module_create_info, 0, sizeof(VkShaderModuleCreateInfo));
-
+	VkShaderModuleCreateInfo shader_module_create_info = { 0 };
 	shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	shader_module_create_info.codeSize = compute_shader_size;
 	shader_module_create_info.pCode = (uint32_t const*)compute_shader_bytes;
 
 	vkCreateShaderModule(g_vulkan_instance_device, &shader_module_create_info, 0, &compute_module);
 
-	VkPipelineShaderStageCreateInfo compute_shader_stage_create_info;
-	memset(&compute_shader_stage_create_info, 0, sizeof(VkPipelineShaderStageCreateInfo));
-
+	VkPipelineShaderStageCreateInfo compute_shader_stage_create_info = { 0 };
 	compute_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	compute_shader_stage_create_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 	compute_shader_stage_create_info.module = compute_module;
 	compute_shader_stage_create_info.pName = "main";
 
-	VkComputePipelineCreateInfo pipeline_create_info;
-	memset(&pipeline_create_info, 0, sizeof(VkComputePipelineCreateInfo));
-
+	VkComputePipelineCreateInfo pipeline_create_info = { 0 };
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 	pipeline_create_info.layout = pipeline_layout;
 	pipeline_create_info.stage = compute_shader_stage_create_info;

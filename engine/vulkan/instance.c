@@ -82,9 +82,7 @@ void vulkan_instance_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkApplicationInfo app_info;
-	memset(&app_info, 0, sizeof(VkApplicationInfo));
-
+	VkApplicationInfo app_info = { 0 };
 	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	app_info.pApplicationName = "";
 	app_info.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
@@ -92,18 +90,14 @@ void vulkan_instance_alloc(void)
 	app_info.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 	app_info.apiVersion = VK_API_VERSION_1_0;
 
-	VkInstanceCreateInfo instance_create_info;
-	memset(&instance_create_info, 0, sizeof(VkInstanceCreateInfo));
-
+	VkInstanceCreateInfo instance_create_info = { 0 };
 	instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instance_create_info.pApplicationInfo = &app_info;
 	instance_create_info.enabledExtensionCount = ARRAY_COUNT(s_vulkan_instance_layer_extensions);
 	instance_create_info.ppEnabledExtensionNames = s_vulkan_instance_layer_extensions;
 
 #ifdef VEGA_DEBUG
-	VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
-	memset(&debug_create_info, 0, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
-
+	VkDebugUtilsMessengerCreateInfoEXT debug_create_info = { 0 };
 	debug_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	debug_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	debug_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
@@ -158,9 +152,7 @@ void vulkan_instance_surface_alloc()
 {
 	TRACY_ZONE_BEGIN
 
-	VkWin32SurfaceCreateInfoKHR surface_create_info;
-	memset(&surface_create_info, 0, sizeof(VkWin32SurfaceCreateInfoKHR));
-
+	VkWin32SurfaceCreateInfoKHR surface_create_info = { 0 };
 	surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surface_create_info.hwnd = g_platform_window_handle;
 	surface_create_info.hinstance = g_platform_window_module_handle;
@@ -178,9 +170,7 @@ void vulkan_instance_device_alloc(void)
 	vector_t device_queue_create_infos = std_vector_alloc(sizeof(VkDeviceQueueCreateInfo));
 
 	{
-		VkDeviceQueueCreateInfo device_queue_create_info;
-		memset(&device_queue_create_info, 0, sizeof(VkDeviceQueueCreateInfo));
-
+		VkDeviceQueueCreateInfo device_queue_create_info = { 0 };
 		device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		device_queue_create_info.queueFamilyIndex = g_vulkan_instance_graphic_and_compute_queue_index;
 		device_queue_create_info.queueCount = 1;
@@ -190,9 +180,7 @@ void vulkan_instance_device_alloc(void)
 	}
 
 	{
-		VkDeviceQueueCreateInfo device_queue_create_info;
-		memset(&device_queue_create_info, 0, sizeof(VkDeviceQueueCreateInfo));
-
+		VkDeviceQueueCreateInfo device_queue_create_info = { 0 };
 		device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		device_queue_create_info.queueFamilyIndex = g_vulkan_instance_present_queue_index;
 		device_queue_create_info.queueCount = 1;
@@ -201,15 +189,11 @@ void vulkan_instance_device_alloc(void)
 		std_vector_push(&device_queue_create_infos, &device_queue_create_info);
 	}
 
-	VkPhysicalDeviceDescriptorIndexingFeatures physical_device_descriptor_indexing_features;
-	memset(&physical_device_descriptor_indexing_features, 0, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
-
+	VkPhysicalDeviceDescriptorIndexingFeatures physical_device_descriptor_indexing_features = { 0 };
 	physical_device_descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 	physical_device_descriptor_indexing_features.pNext = 0;
 
-	VkPhysicalDeviceFeatures2 physical_device_features_2;
-	memset(&physical_device_features_2, 0, sizeof(VkPhysicalDeviceFeatures2));
-
+	VkPhysicalDeviceFeatures2 physical_device_features_2 = { 0 };
 	physical_device_features_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	physical_device_features_2.pNext = &physical_device_descriptor_indexing_features;
 
@@ -219,9 +203,7 @@ void vulkan_instance_device_alloc(void)
 	physical_device_features_2.features.samplerAnisotropy = 1;
 	physical_device_features_2.features.shaderFloat64 = 1;
 
-	VkDeviceCreateInfo device_create_info;
-	memset(&device_create_info, 0, sizeof(VkDeviceCreateInfo));
-
+	VkDeviceCreateInfo device_create_info = { 0 };
 	device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	device_create_info.pQueueCreateInfos = std_vector_buffer(&device_queue_create_infos);
 	device_create_info.queueCreateInfoCount = (uint32_t)std_vector_count(&device_queue_create_infos);
@@ -249,9 +231,7 @@ void vulkan_instance_command_pool_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkCommandPoolCreateInfo command_pool_create_info;
-	memset(&command_pool_create_info, 0, sizeof(VkCommandPoolCreateInfo));
-
+	VkCommandPoolCreateInfo command_pool_create_info = { 0 };
 	command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	command_pool_create_info.queueFamilyIndex = g_vulkan_instance_graphic_and_compute_queue_index;

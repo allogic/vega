@@ -54,9 +54,7 @@ void scene_push(void)
 {
 	TRACY_ZONE_BEGIN
 
-	scene_t scene;
-	memset(&scene, 0, sizeof(scene_t));
-
+	scene_t scene = { 0 };
 	scene.ecs = std_ecs_alloc();
 
 	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_TRANSFORM, sizeof(transform_t));

@@ -132,9 +132,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 {
 	TRACY_ZONE_BEGIN
 
-	image_t image;
-	memset(&image, 0, sizeof(image_t));
-
+	image_t image = { 0 };
 	image.size = width * height * depth * channels;
 	image.width = width;
 	image.height = height;
@@ -146,9 +144,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	image.tiling = tiling;
 	image.filter = filter;
 
-	VkImageCreateInfo image_create_info;
-	memset(&image_create_info, 0, sizeof(VkImageCreateInfo));
-
+	VkImageCreateInfo image_create_info = { 0 };
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_create_info.imageType = type;
 	image_create_info.extent.width = width;
@@ -168,9 +164,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	VkMemoryRequirements memory_requirements;
 	vkGetImageMemoryRequirements(g_vulkan_instance_device, image.image, &memory_requirements);
 
-	VkMemoryAllocateInfo memory_allocate_info;
-	memset(&memory_allocate_info, 0, sizeof(VkMemoryAllocateInfo));
-
+	VkMemoryAllocateInfo memory_allocate_info = { 0 };
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_allocate_info.allocationSize = memory_requirements.size;
 	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, memory_properties);
@@ -178,9 +172,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	vkAllocateMemory(g_vulkan_instance_device, &memory_allocate_info, 0, &image.device_memory);
 	vkBindImageMemory(g_vulkan_instance_device, image.image, image.device_memory, 0);
 
-	VkImageViewCreateInfo image_view_create_info;
-	memset(&image_view_create_info, 0, sizeof(VkImageViewCreateInfo));
-
+	VkImageViewCreateInfo image_view_create_info = { 0 };
 	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	image_view_create_info.image = image.image;
 	image_view_create_info.viewType = view_type;
@@ -193,9 +185,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 
 	vkCreateImageView(g_vulkan_instance_device, &image_view_create_info, 0, &image.image_view);
 
-	VkSamplerCreateInfo sampler_create_info;
-	memset(&sampler_create_info, 0, sizeof(VkSamplerCreateInfo));
-
+	VkSamplerCreateInfo sampler_create_info = { 0 };
 	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampler_create_info.magFilter = filter;
 	sampler_create_info.minFilter = filter;
@@ -240,9 +230,7 @@ void vulkan_image_copy_to_image(image_t* image, image_t* target, VkCommandBuffer
 {
 	TRACY_ZONE_BEGIN
 
-	VkImageCopy image_copy;
-	memset(&image_copy, 0, sizeof(VkImageCopy));
-
+	VkImageCopy image_copy = { 0 };
 	image_copy.extent.width = image->width;
 	image_copy.extent.height = image->height;
 	image_copy.extent.depth = image->depth;
@@ -255,9 +243,7 @@ void vulkan_image_layout_transition(image_t* image, VkCommandBuffer command_buff
 {
 	TRACY_ZONE_BEGIN
 
-	VkImageMemoryBarrier image_memory_barrier;
-	memset(&image_memory_barrier, 0, sizeof(VkImageMemoryBarrier));
-
+	VkImageMemoryBarrier image_memory_barrier = { 0 };
 	image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	image_memory_barrier.oldLayout = old_layout;
 	image_memory_barrier.newLayout = new_layout;
@@ -391,8 +377,7 @@ VkFormat vulkan_image_find_supported_format(VkFormat* formats, uint64_t format_c
 	uint64_t format_index = 0;
 	while (format_index < format_count)
 	{
-		VkFormatProperties format_properties;
-		memset(&format_properties, 0, sizeof(VkFormatProperties));
+		VkFormatProperties format_properties = { 0 };
 
 		vkGetPhysicalDeviceFormatProperties(g_vulkan_instance_physical_device, formats[format_index], &format_properties);
 
@@ -422,9 +407,7 @@ VkImageView vulkan_image_view_alloc(VkImage image, VkImageViewType view_type, Vk
 
 	VkImageView image_view;
 
-	VkImageViewCreateInfo image_view_create_info;
-	memset(&image_view_create_info, 0, sizeof(VkImageViewCreateInfo));
-
+	VkImageViewCreateInfo image_view_create_info = { 0 };
 	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	image_view_create_info.image = image;
 	image_view_create_info.viewType = view_type;
@@ -447,9 +430,7 @@ VkSampler vulkan_image_sampler_alloc(VkFilter filter)
 
 	VkSampler sampler;
 
-	VkSamplerCreateInfo sampler_create_info;
-	memset(&sampler_create_info, 0, sizeof(VkSamplerCreateInfo));
-
+	VkSamplerCreateInfo sampler_create_info = { 0 };
 	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampler_create_info.magFilter = filter;
 	sampler_create_info.minFilter = filter;

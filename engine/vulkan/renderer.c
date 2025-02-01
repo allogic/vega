@@ -137,9 +137,7 @@ void vulkan_renderer_render(void)
 	{
 		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_compute_complete_semaphore };
 
-		VkSubmitInfo submit_info;
-		memset(&submit_info, 0, sizeof(VkSubmitInfo));
-
+		VkSubmitInfo submit_info = { 0 };
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.pWaitSemaphores = 0;
 		submit_info.waitSemaphoreCount = 0;
@@ -157,9 +155,7 @@ void vulkan_renderer_render(void)
 		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
 		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		VkSubmitInfo submit_info;
-		memset(&submit_info, 0, sizeof(VkSubmitInfo));
-
+		VkSubmitInfo submit_info = { 0 };
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.waitSemaphoreCount = (uint32_t)ARRAY_COUNT(wait_semaphores);
@@ -178,9 +174,7 @@ void vulkan_renderer_render(void)
 		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
 		VkSwapchainKHR swap_chains[] = { g_vulkan_swap_chain };
 
-		VkPresentInfoKHR present_info;
-		memset(&present_info, 0, sizeof(VkPresentInfoKHR));
-
+		VkPresentInfoKHR present_info = { 0 };
 		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present_info.pWaitSemaphores = wait_semaphores;
 		present_info.waitSemaphoreCount = (uint32_t)ARRAY_COUNT(wait_semaphores);
@@ -253,9 +247,7 @@ void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count)
 		descriptor_index++;
 	}
 
-	VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
-	memset(&descriptor_set_allocate_info, 0, sizeof(VkDescriptorSetAllocateInfo));
-
+	VkDescriptorSetAllocateInfo descriptor_set_allocate_info = { 0 };
 	descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	descriptor_set_allocate_info.descriptorSetCount = (uint32_t)descriptor_count;
 	descriptor_set_allocate_info.descriptorPool = s_vulkan_renderer_pbr_descriptor_pool;
@@ -287,9 +279,7 @@ void vulkan_renderer_command_buffer_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkCommandBufferAllocateInfo command_buffer_alloc_create_info;
-	memset(&command_buffer_alloc_create_info, 0, sizeof(VkCommandBufferAllocateInfo));
-
+	VkCommandBufferAllocateInfo command_buffer_alloc_create_info = { 0 };
 	command_buffer_alloc_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_alloc_create_info.commandPool = g_vulkan_instance_command_pool;
 	command_buffer_alloc_create_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -304,18 +294,14 @@ void vulkan_renderer_sync_objects_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkSemaphoreCreateInfo semaphore_create_info;
-	memset(&semaphore_create_info, 0, sizeof(VkSemaphoreCreateInfo));
-
+	VkSemaphoreCreateInfo semaphore_create_info = { 0 };
 	semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	vkCreateSemaphore(g_vulkan_instance_device, &semaphore_create_info, 0, &s_vulkan_renderer_graphic_complete_semaphore);
 	vkCreateSemaphore(g_vulkan_instance_device, &semaphore_create_info, 0, &s_vulkan_renderer_compute_complete_semaphore);
 	vkCreateSemaphore(g_vulkan_instance_device, &semaphore_create_info, 0, &s_vulkan_renderer_image_available_semaphore);
 
-	VkFenceCreateInfo fence_create_info;
-	memset(&fence_create_info, 0, sizeof(VkFenceCreateInfo));
-
+	VkFenceCreateInfo fence_create_info = { 0 };
 	fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
@@ -327,9 +313,7 @@ void vulkan_renderer_render_pass_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkAttachmentDescription color_attachment_description;
-	memset(&color_attachment_description, 0, sizeof(VkAttachmentDescription));
-
+	VkAttachmentDescription color_attachment_description = { 0 };
 	color_attachment_description.format = g_vulkan_instance_prefered_surface_format.format;
 	color_attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
 	color_attachment_description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -339,9 +323,7 @@ void vulkan_renderer_render_pass_alloc(void)
 	color_attachment_description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	color_attachment_description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentDescription depth_attachment_description;
-	memset(&depth_attachment_description, 0, sizeof(VkAttachmentDescription));
-
+	VkAttachmentDescription depth_attachment_description = { 0 };
 	depth_attachment_description.format = g_vulkan_swap_chain_depth_format;
 	depth_attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
 	depth_attachment_description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -351,29 +333,21 @@ void vulkan_renderer_render_pass_alloc(void)
 	depth_attachment_description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depth_attachment_description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentReference color_attachment_reference;
-	memset(&color_attachment_reference, 0, sizeof(VkAttachmentReference));
-
+	VkAttachmentReference color_attachment_reference = { 0 };
 	color_attachment_reference.attachment = 0;
 	color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentReference depth_attachment_reference;
-	memset(&depth_attachment_reference, 0, sizeof(VkAttachmentReference));
-
+	VkAttachmentReference depth_attachment_reference = { 0 };
 	depth_attachment_reference.attachment = 1;
 	depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkSubpassDescription subpass_description;
-	memset(&subpass_description, 0, sizeof(VkSubpassDescription));
-
+	VkSubpassDescription subpass_description = { 0 };
 	subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass_description.colorAttachmentCount = 1;
 	subpass_description.pColorAttachments = &color_attachment_reference;
 	subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
 
-	VkSubpassDependency subpass_dependency;
-	memset(&subpass_dependency, 0, sizeof(VkSubpassDependency));
-
+	VkSubpassDependency subpass_dependency = { 0 };
 	subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	subpass_dependency.dstSubpass = 0;
 	subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -383,9 +357,7 @@ void vulkan_renderer_render_pass_alloc(void)
 
 	VkAttachmentDescription attachment_descriptions[] = { color_attachment_description, depth_attachment_description };
 
-	VkRenderPassCreateInfo render_pass_create_info;
-	memset(&render_pass_create_info, 0, sizeof(VkRenderPassCreateInfo));
-
+	VkRenderPassCreateInfo render_pass_create_info = { 0 };
 	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	render_pass_create_info.pAttachments = attachment_descriptions;
 	render_pass_create_info.attachmentCount = (uint32_t)ARRAY_COUNT(attachment_descriptions);
@@ -415,9 +387,7 @@ void vulkan_renderer_frame_buffer_alloc(void)
 			g_vulkan_swap_chain_depth_image.image_view,
 		};
 
-		VkFramebufferCreateInfo frame_buffer_create_info;
-		memset(&frame_buffer_create_info, 0, sizeof(VkFramebufferCreateInfo));
-
+		VkFramebufferCreateInfo frame_buffer_create_info = { 0 };
 		frame_buffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		frame_buffer_create_info.renderPass = s_vulkan_renderer_render_pass;
 		frame_buffer_create_info.pAttachments = image_attachments;
@@ -463,9 +433,7 @@ void vulkan_renderer_record_compute_command_buffer(void)
 
 	vkQueueWaitIdle(g_vulkan_instance_compute_queue); // TODO
 
-	VkCommandBufferBeginInfo command_buffer_begin_info;
-	memset(&command_buffer_begin_info, 0, sizeof(VkCommandBufferBeginInfo));
-
+	VkCommandBufferBeginInfo command_buffer_begin_info = { 0 };
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	command_buffer_begin_info.flags = 0;
 	command_buffer_begin_info.pInheritanceInfo = 0;
@@ -498,34 +466,26 @@ void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
 
 	vkQueueWaitIdle(g_vulkan_instance_graphic_queue); // TODO
 
-	VkCommandBufferBeginInfo command_buffer_begin_info;
-	memset(&command_buffer_begin_info, 0, sizeof(VkCommandBufferBeginInfo));
-
+	VkCommandBufferBeginInfo command_buffer_begin_info = { 0 };
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	command_buffer_begin_info.flags = 0;
 	command_buffer_begin_info.pInheritanceInfo = 0;
 
 	vkBeginCommandBuffer(s_vulkan_renderer_graphic_command_buffer, &command_buffer_begin_info);
 
-	VkClearValue color_clear_value;
-	memset(&color_clear_value, 0, sizeof(VkClearValue));
-
+	VkClearValue color_clear_value = { 0 };
 	color_clear_value.color.float32[0] = 0.0F;
 	color_clear_value.color.float32[1] = 0.0F;
 	color_clear_value.color.float32[2] = 0.0F;
 	color_clear_value.color.float32[3] = 1.0F;
 
-	VkClearValue depth_clear_value;
-	memset(&depth_clear_value, 0, sizeof(VkClearValue));
-
+	VkClearValue depth_clear_value = { 0 };
 	depth_clear_value.depthStencil.depth = 1.0F;
 	depth_clear_value.depthStencil.stencil = 0;
 
 	VkClearValue clear_values[] = { color_clear_value, depth_clear_value };
 
-	VkRenderPassBeginInfo render_pass_create_info;
-	memset(&render_pass_create_info, 0, sizeof(VkRenderPassBeginInfo));
-
+	VkRenderPassBeginInfo render_pass_create_info = { 0 };
 	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_create_info.renderPass = s_vulkan_renderer_render_pass;
 	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_get(&s_vulkan_renderer_frame_buffers, image_index);
@@ -536,9 +496,7 @@ void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
 	render_pass_create_info.pClearValues = clear_values;
 	render_pass_create_info.clearValueCount = (uint32_t)ARRAY_COUNT(clear_values);
 
-	VkViewport viewport;
-	memset(&viewport, 0, sizeof(VkViewport));
-
+	VkViewport viewport = { 0 };
 	viewport.x = 0.0F;
 	viewport.y = 0.0F;
 	viewport.width = (float)g_vulkan_instance_surface_capabilities.currentExtent.width;
@@ -546,9 +504,7 @@ void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index)
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 
-	VkRect2D scissor;
-	memset(&scissor, 0, sizeof(VkRect2D));
-
+	VkRect2D scissor = { 0 };
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 	scissor.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;

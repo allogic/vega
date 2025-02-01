@@ -26,9 +26,7 @@ ecs_t std_ecs_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	ecs_t ecs;
-	memset(&ecs, 0, sizeof(ecs_t));
-
+	ecs_t ecs = { 0 };
 	ecs.masks = std_fdat64_alloc();
 	ecs.alloc_entities = std_fvector64_alloc();
 	ecs.free_entities = std_fvector64_alloc();

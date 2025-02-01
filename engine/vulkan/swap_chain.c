@@ -31,9 +31,7 @@ void vulkan_swap_chain_alloc(void)
 	s_vulkan_swap_chain_images = std_vector_alloc(sizeof(VkImage));
 	g_vulkan_swap_chain_image_views = std_vector_alloc(sizeof(VkImageView));
 
-	VkSwapchainCreateInfoKHR swap_chain_create_info;
-	memset(&swap_chain_create_info, 0, sizeof(VkSwapchainCreateInfoKHR));
-
+	VkSwapchainCreateInfoKHR swap_chain_create_info = { 0 };
 	swap_chain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	swap_chain_create_info.surface = g_vulkan_instance_surface;
 	swap_chain_create_info.minImageCount = g_vulkan_instance_surface_capabilities.minImageCount + 1;
@@ -100,9 +98,7 @@ void vulkan_swap_chain_resize_after(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkSwapchainCreateInfoKHR swap_chain_create_info;
-	memset(&swap_chain_create_info, 0, sizeof(VkSwapchainCreateInfoKHR));
-
+	VkSwapchainCreateInfoKHR swap_chain_create_info = { 0 };
 	swap_chain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	swap_chain_create_info.surface = g_vulkan_instance_surface;
 	swap_chain_create_info.minImageCount = g_vulkan_instance_surface_capabilities.minImageCount + 1;

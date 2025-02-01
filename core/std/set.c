@@ -31,9 +31,7 @@ set_t std_set_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	set_t set;
-	memset(&set, 0, sizeof(set_t));
-
+	set_t set = { 0 };
 	set.table = (set_entry_t**)heap_alloc(SET_TABLE_COUNT * sizeof(set_entry_t*));
 	set.table_size = SET_TABLE_COUNT * sizeof(set_entry_t*);
 	set.table_count = SET_TABLE_COUNT;

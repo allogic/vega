@@ -27,9 +27,7 @@ fvector32_t std_fvector32_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	fvector32_t vector;
-	memset(&vector, 0, sizeof(fvector32_t));
-
+	fvector32_t vector = { 0 };
 	vector.buffer = (uint32_t*)heap_alloc(ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT) * sizeof(uint32_t));
 	vector.buffer_capacity = ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT);
 	vector.buffer_count = 0;

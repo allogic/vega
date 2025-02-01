@@ -15,11 +15,9 @@ VkCommandBuffer vulkan_command_buffer_begin(void)
 {
 	TRACY_ZONE_BEGIN
 
-	VkCommandBuffer command_buffer;
+	VkCommandBuffer command_buffer = 0;
 
-	VkCommandBufferAllocateInfo command_buffer_allocate_info;
-	memset(&command_buffer_allocate_info, 0, sizeof(VkCommandBufferAllocateInfo));
-
+	VkCommandBufferAllocateInfo command_buffer_allocate_info = { 0 };
 	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	command_buffer_allocate_info.commandPool = g_vulkan_instance_command_pool;
@@ -27,9 +25,7 @@ VkCommandBuffer vulkan_command_buffer_begin(void)
 
 	vkAllocateCommandBuffers(g_vulkan_instance_device, &command_buffer_allocate_info, &command_buffer);
 
-	VkCommandBufferBeginInfo command_buffer_begin_info;
-	memset(&command_buffer_begin_info, 0, sizeof(VkCommandBufferBeginInfo));
-
+	VkCommandBufferBeginInfo command_buffer_begin_info = { 0 };
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
@@ -45,9 +41,7 @@ void vulkan_command_buffer_end(VkCommandBuffer command_buffer)
 
 	vkEndCommandBuffer(command_buffer);
 
-	VkSubmitInfo submit_info;
-	memset(&submit_info, 0, sizeof(VkSubmitInfo));
-
+	VkSubmitInfo submit_info = { 0 };
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submit_info.commandBufferCount = 1;
 	submit_info.pCommandBuffers = &command_buffer;

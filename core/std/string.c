@@ -27,9 +27,7 @@ string_t std_string_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	string_t string;
-	memset(&string, 0, sizeof(string_t));
-
+	string_t string = { 0 };
 	string.buffer = (char*)heap_alloc(ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT));
 	string.buffer_capacity = ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT);
 	string.buffer_size = 0;

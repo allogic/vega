@@ -31,9 +31,7 @@ map_t std_map_alloc()
 {
 	TRACY_ZONE_BEGIN
 
-	map_t map;
-	memset(&map, 0, sizeof(map_t));
-
+	map_t map = { 0 };
 	map.table = (map_pair_t**)heap_alloc(MAP_TABLE_COUNT * sizeof(map_pair_t*));
 	map.table_size = MAP_TABLE_COUNT * sizeof(map_pair_t*);
 	map.table_count = MAP_TABLE_COUNT;

@@ -27,9 +27,7 @@ fvector64_t std_fvector64_alloc(void)
 {
 	TRACY_ZONE_BEGIN
 
-	fvector64_t vector;
-	memset(&vector, 0, sizeof(fvector64_t));
-
+	fvector64_t vector = { 0 };
 	vector.buffer = (uint64_t*)heap_alloc(ALIGN_UP_BY(FVECTOR64_BUFFER_CAPACITY, FVECTOR64_BUFFER_ALIGNMENT) * sizeof(uint64_t));
 	vector.buffer_capacity = ALIGN_UP_BY(FVECTOR64_BUFFER_CAPACITY, FVECTOR64_BUFFER_ALIGNMENT);
 	vector.buffer_count = 0;
