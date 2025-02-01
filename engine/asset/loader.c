@@ -861,7 +861,7 @@ static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param)
 			pbr_vertex.position.x = assimp_mesh->mVertices[vertex_index].x;
 			pbr_vertex.position.y = assimp_mesh->mVertices[vertex_index].y;
 			pbr_vertex.position.z = assimp_mesh->mVertices[vertex_index].z;
-			pbr_vertex.position.w = 0.0;
+			pbr_vertex.position.w = 1.0;
 		}
 
 		if (assimp_mesh->mNormals)

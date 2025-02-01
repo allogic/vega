@@ -631,24 +631,31 @@ static void vulkan_renderer_update_camera_info_proc(ecs_t* ecs, uint64_t entity)
 	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM);
 	camera_t* camera = (camera_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_CAMERA);
 
+	camera_info_t* camera_info = (camera_info_t*)s_vulkan_renderer_camera_info_buffer.mapped_buffer;
+
+	vector3_t eye = transform->world_position;
+	vector3_t center = math_vector3_add(transform->world_position, transform->local_front);
+	vector3_t up = g_world_up;
+
+	camera_info->view = math_matrix4_look_at(eye, center, up);
+
 	switch (camera->mode)
 	{
 		case CAMERA_MODE_ORTHO:
 		{
-			// TODO
+			double left = camera->left;
+			double right = camera->right;
+			double bottom = camera->bottom;
+			double top = camera->top;
+			double near_z = camera->near_z;
+			double far_z = camera->far_z;
+
+			camera_info->projection = math_matrix4_ortho(left, right, bottom, top, near_z, far_z);
 
 			break;
 		}
 		case CAMERA_MODE_PERSP:
 		{
-			camera_info_t* camera_info = (camera_info_t*)s_vulkan_renderer_camera_info_buffer.mapped_buffer;
-
-			vector3_t eye = transform->world_position;
-			vector3_t center = math_vector3_add(transform->world_position, transform->local_front);
-			vector3_t up = g_world_up;
-
-			camera_info->view = math_matrix4_look_at(eye, center, up);
-
 			double fov = camera->fov;
 			double aspect_ratio = (double)g_vulkan_instance_surface_capabilities.currentExtent.width / (double)g_vulkan_instance_surface_capabilities.currentExtent.height;
 			double near_z = camera->near_z;

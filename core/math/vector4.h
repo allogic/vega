@@ -2,6 +2,7 @@
 #define VEGA_CORE_MATH_VECTOR4_H
 
 #include <math.h>
+#include <stdio.h>
 
 #if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	#include <immintrin.h>
@@ -471,6 +472,10 @@ __forceinline double math_vector4_length(vector4_t a)
 __forceinline double math_vector4_length2(vector4_t a)
 {
 	return math_vector4_dot(a, a);
+}
+__forceinline void math_vector4_print(vector4_t a)
+{
+	printf("[%f, %f, %f, %f]\n", a.x, a.y, a.z, a.w);
 }
 
 #endif // VEGA_CORE_MATH_VECTOR4_H

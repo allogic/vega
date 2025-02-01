@@ -61,6 +61,7 @@ __forceinline vector2_t math_vector2_norm(vector2_t a);
 __forceinline double math_vector2_dot(vector2_t a, vector2_t b);
 __forceinline double math_vector2_length(vector2_t a);
 __forceinline double math_vector2_length2(vector2_t a);
+__forceinline void math_vector2_print(vector2_t a);
 
 __forceinline vector3_t math_vector3_zero(void);
 __forceinline vector3_t math_vector3_one(void);
@@ -79,6 +80,7 @@ __forceinline vector3_t math_vector3_rotate(vector3_t a, quaternion_t b);
 __forceinline double math_vector3_dot(vector3_t a, vector3_t b);
 __forceinline double math_vector3_length(vector3_t a);
 __forceinline double math_vector3_length2(vector3_t a);
+__forceinline void math_vector3_print(vector3_t a);
 
 __forceinline vector4_t math_vector4_zero(void);
 __forceinline vector4_t math_vector4_one(void);
@@ -95,6 +97,7 @@ __forceinline vector4_t math_vector4_norm(vector4_t a);
 __forceinline double math_vector4_dot(vector4_t a, vector4_t b);
 __forceinline double math_vector4_length(vector4_t a);
 __forceinline double math_vector4_length2(vector4_t a);
+__forceinline void math_vector4_print(vector4_t a);
 
 __forceinline quaternion_t math_quaternion_zero(void);
 __forceinline quaternion_t math_quaternion_identity(void);
@@ -111,6 +114,7 @@ __forceinline quaternion_t math_quaternion_norm(quaternion_t a); // TODO: norm u
 __forceinline double math_quaternion_dot(quaternion_t a, quaternion_t b);
 __forceinline double math_quaternion_length(quaternion_t a);
 __forceinline double math_quaternion_length2(quaternion_t a);
+__forceinline void math_quaternion_print(quaternion_t a);
 
 __forceinline matrix4_t math_matrix4_zero(void);
 __forceinline matrix4_t math_matrix4_identity(void);
@@ -135,5 +139,6 @@ __forceinline matrix4_t math_matrix4_mul(matrix4_t a, matrix4_t b);
 __forceinline matrix4_t math_matrix4_ortho(double left, double right, double bottom, double top, double near_z, double far_z);
 __forceinline matrix4_t math_matrix4_persp(double fov, double aspect_ratio, double near_z, double far_z);
 __forceinline matrix4_t math_matrix4_look_at(vector3_t eye, vector3_t center, vector3_t up);
+__forceinline void math_matrix4_print(matrix4_t a);
 
 #endif // VEGA_CORE_MATH_FORWARD_H

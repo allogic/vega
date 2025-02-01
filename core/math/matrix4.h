@@ -2,6 +2,7 @@
 #define VEGA_CORE_MATH_MATRIX4_H
 
 #include <math.h>
+#include <stdio.h>
 
 #if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
 	#include <immintrin.h>
@@ -273,6 +274,13 @@ __forceinline matrix4_t math_matrix4_look_at(vector3_t eye, vector3_t center, ve
 	};
 
 	return r;
+}
+__forceinline void math_matrix4_print(matrix4_t a)
+{
+	printf("[%f, %f, %f, %f]\n", a.m00, a.m01, a.m02, a.m03);
+	printf("[%f, %f, %f, %f]\n", a.m10, a.m11, a.m12, a.m13);
+	printf("[%f, %f, %f, %f]\n", a.m20, a.m21, a.m22, a.m23);
+	printf("[%f, %f, %f, %f]\n", a.m30, a.m31, a.m32, a.m33);
 }
 
 #endif // VEGA_CORE_MATH_MATRIX4_H

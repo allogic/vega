@@ -1,4 +1,3 @@
-#include <stdio.h> // TODO
 #include <string.h>
 
 #include <vega/engine/engine.h>
@@ -164,8 +163,6 @@ static void scene_update_controller_proc(ecs_t* ecs, uint64_t entity)
 
 	scene_controller_handle_position(scene_controller, transform);
 	scene_controller_handle_rotation(scene_controller, transform);
-
-	printf("%f %f %f\n", transform->world_position.x, transform->world_position.y, transform->world_position.z);
 
 	TRACY_ZONE_END
 }

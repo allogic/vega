@@ -42,7 +42,9 @@ layout (location = 5) out vec2 output_texcoord_channel_0;
 
 void main()
 {
-	dvec4 world_position = camera_info.projection * camera_info.view * vertex_position;
+	dvec4 world_position = vertex_position;
+	dvec4 view_position = camera_info.view * world_position;
+	dvec4 clip_position = camera_info.projection * view_position;
 
 	output_position = vec3(world_position);
 	output_normal = vec3(vertex_normal);
@@ -51,5 +53,5 @@ void main()
 	output_color_channel_0 = vec4(vertex_color_channel_0);
 	output_texcoord_channel_0 = vec2(vertex_texture_channel_0);
 
-	gl_Position = vec4(world_position);
+	gl_Position = vec4(clip_position);
 }
