@@ -34,6 +34,11 @@ typedef struct _mesh_asset_thread_args_t
 	struct aiScene const* assimp_scene;
 } mesh_asset_thread_args_t;
 
+extern map_t g_asset_loader_models;
+extern map_t g_asset_loader_textures;
+extern map_t g_asset_loader_materials;
+extern map_t g_asset_loader_meshes;
+
 ///////////////////////////////////////////////////////////////
 // Public API
 ///////////////////////////////////////////////////////////////
@@ -49,6 +54,8 @@ void asset_loader_load_texture(char const* name, char const* file_stem, char con
 ///////////////////////////////////////////////////////////////
 
 void asset_loader_print_stats(struct aiScene const* assimp_scene);
+
+vector_t asset_loader_material_tokenize_property_key(struct aiMaterialProperty const* assimp_material_property);
 
 void asset_loader_build_gpu_resources(void);
 

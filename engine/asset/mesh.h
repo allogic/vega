@@ -13,6 +13,7 @@ typedef struct _mesh_asset_t
 	uint32_t mesh_index;
 	uint8_t loaded;
 	uint8_t is_loading;
+	string_t material_ref;
 	vector_t pbr_vertices;
 	fvector32_t pbr_indices;
 	buffer_t pbr_vertex_buffer;

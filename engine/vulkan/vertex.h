@@ -1,5 +1,5 @@
-#ifndef VEGA_ENGINE_RENDERER_VERTEX_H
-#define VEGA_ENGINE_RENDERER_VERTEX_H
+#ifndef VEGA_ENGINE_VULKAN_VERTEX_H
+#define VEGA_ENGINE_VULKAN_VERTEX_H
 
 #include <stdint.h>
 
@@ -18,4 +18,4 @@ typedef struct _pbr_vertex_t
 	vector4_t bone_weights; // TODO
 } pbr_vertex_t;
 
-#endif // VEGA_ENGINE_RENDERER_VERTEX_H
+#endif // VEGA_ENGINE_VULKAN_VERTEX_H

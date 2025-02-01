@@ -74,7 +74,7 @@ __forceinline quaternion_t math_matrix4_rotation(matrix4_t a)
 		r.x = (cn2.y - cn1.z) * s;
 		r.y = (cn0.z - cn2.x) * s;
 		r.z = (cn1.x - cn0.y) * s;
-		r.w = 0.25f / s;
+		r.w = 0.25 / s;
 	}
 	else
 	{
@@ -82,7 +82,7 @@ __forceinline quaternion_t math_matrix4_rotation(matrix4_t a)
 		{
 			double s = 2.0 * sqrt(1.0 + cn0.x - cn1.y - cn2.z);
 
-			r.x = 0.25f * s;
+			r.x = 0.25 * s;
 			r.y = (cn0.y + cn1.x) / s;
 			r.z = (cn0.z + cn2.y) / s;
 			r.w = (cn2.y - cn1.z) / s;
@@ -113,7 +113,7 @@ __forceinline vector3_t math_matrix4_euler_angles(matrix4_t a)
 {
 	vector3_t r;
 
-	if (fabs(a.m02) < 1.0 - MATH_EPSILON_15)
+	if (fabs(a.m02) < (1.0 - MATH_EPSILON_15))
 	{
 		r.x = atan2(-a.m12, a.m22);
 		r.y = asin(a.m02);
@@ -122,7 +122,7 @@ __forceinline vector3_t math_matrix4_euler_angles(matrix4_t a)
 	else
 	{
 		r.x = atan2(a.m10, a.m11);
-		r.y = (a.m02 > 0.0) ? MATH_PI / 2.0 : -MATH_PI / 2.0;
+		r.y = (a.m02 > 0.0) ? (MATH_PI / 2.0) : (-MATH_PI / 2.0);
 		r.z = 0.0;
 	}
 
@@ -165,7 +165,7 @@ __forceinline void math_matrix4_decompose(matrix4_t a, vector3_t* p, quaternion_
 		r->x = (cn2.y - cn1.z) * s;
 		r->y = (cn0.z - cn2.x) * s;
 		r->z = (cn1.x - cn0.y) * s;
-		r->w = 0.25f / s;
+		r->w = 0.25 / s;
 	}
 	else
 	{
@@ -173,7 +173,7 @@ __forceinline void math_matrix4_decompose(matrix4_t a, vector3_t* p, quaternion_
 		{
 			double s = 2.0 * sqrt(1.0 + cn0.x - cn1.y - cn2.z);
 
-			r->x = 0.25f * s;
+			r->x = 0.25 * s;
 			r->y = (cn0.y + cn1.x) / s;
 			r->z = (cn0.z + cn2.y) / s;
 			r->w = (cn2.y - cn1.z) / s;
@@ -234,8 +234,8 @@ __forceinline matrix4_t math_matrix4_ortho(double left, double right, double bot
 	{
 		.m00 =             2.0 / (right - left), .m01 =                              0.0, .m02 =                        0.0, .m03 = 0.0,
 		.m10 =                              0.0, .m11 =             2.0 / (top - bottom), .m12 =                        0.0, .m13 = 0.0,
-		.m20 =                              0.0, .m21 =                              0.0, .m22 =     1.0 / (far_z - near_z), .m23 = 0.0,
-		.m30 = -(right + left) / (right - left), .m31 = -(top + bottom) / (top - bottom), .m32 = -near_z / (far_z - near_z), .m33 = 1.0,
+		.m20 =                              0.0, .m21 =                              0.0, .m22 =     1.0 / (far_z - near_z), .m23 = 1.0,
+		.m30 = -(right + left) / (right - left), .m31 = -(top + bottom) / (top - bottom), .m32 = -near_z / (far_z - near_z), .m33 = 0.0,
 	};
 
 	return r;
@@ -246,10 +246,10 @@ __forceinline matrix4_t math_matrix4_persp(double fov, double aspect_ratio, doub
 
 	matrix4_t r =
 	{
-		.m00 = 1.0 / (aspect_ratio * tan_half_fov), .m01 =                  0.0, .m02 =                                  0.0, .m03 = 0.0,
-		.m10 =                                 0.0, .m11 = 1.0 / (tan_half_fov), .m12 =                                  0.0, .m13 = 0.0,
-		.m20 =                                 0.0, .m21 =                  0.0, .m22 =             far_z / (far_z - near_z), .m23 = 0.0,
-		.m30 =                                 0.0, .m31 =                  0.0, .m32 = -(far_z * near_z) / (far_z - near_z), .m33 = 1.0,
+		.m00 = 1.0 / (aspect_ratio * tan_half_fov), .m01 =                0.0, .m02 =                                  0.0, .m03 = 0.0,
+		.m10 =                                 0.0, .m11 = 1.0 / tan_half_fov, .m12 =                                  0.0, .m13 = 0.0,
+		.m20 =                                 0.0, .m21 =                0.0, .m22 =             far_z / (far_z - near_z), .m23 = 1.0,
+		.m30 =                                 0.0, .m31 =                0.0, .m32 = -(far_z * near_z) / (far_z - near_z), .m33 = 0.0,
 	};
 
 	return r;

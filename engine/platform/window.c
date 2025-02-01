@@ -178,20 +178,20 @@ void platform_window_end_frame(void)
 
 	timer_end(&s_platform_window_timer);
 
-	g_platform_window_delta_time = timer_us(&s_platform_window_timer);
+	g_platform_window_delta_time = timer_ms(&s_platform_window_timer);
 	g_platform_window_time += g_platform_window_delta_time;
 
 	TRACY_ZONE_END
 }
-uint8_t platform_window_should_not_close(void)
+uint8_t platform_window_should_close(void)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t should_not_close = g_platform_window_should_close == 0
+	uint8_t should_close = g_platform_window_should_close;
 
 	TRACY_ZONE_END
 
-	return should_not_close;
+	return should_close;
 }
 uint8_t platform_window_is_keyboard_key_pressed(keyboard_key Key)
 {

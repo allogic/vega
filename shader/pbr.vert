@@ -2,6 +2,11 @@
 
 #extension GL_ARB_gpu_shader_fp64 : require
 
+struct entity_info_t
+{
+	dmat4 model;
+};
+
 layout (location = 0) in dvec4 vertex_position;
 layout (location = 2) in dvec4 vertex_normal;
 layout (location = 4) in dvec4 vertex_tangent;
@@ -17,11 +22,16 @@ layout (binding = 0) uniform time_info_t
 	double delta_time;
 } time_info;
 
-layout (binding = 1) uniform projection_info_t
+layout (binding = 1) uniform camera_info_t
 {
 	dmat4 view;
 	dmat4 projection;
-} projection_info;
+} camera_info;
+
+layout (binding = 2) buffer entity_info_buffer_t
+{
+	entity_info_t entity_infos[];
+} entity_info_buffer;
 
 layout (location = 0) out vec3 output_position;
 layout (location = 1) out vec3 output_normal;
@@ -32,7 +42,7 @@ layout (location = 5) out vec2 output_texcoord_channel_0;
 
 void main()
 {
-	dvec4 world_position = projection_info.projection * projection_info.view * vertex_position;
+	dvec4 world_position = camera_info.projection * camera_info.view * vertex_position;
 
 	output_position = vec3(world_position);
 	output_normal = vec3(vertex_normal);

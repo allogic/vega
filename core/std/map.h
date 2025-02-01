@@ -32,6 +32,7 @@ typedef struct _map_iter_t
 ///////////////////////////////////////////////////////////////
 
 map_t std_map_alloc(void);
+void* std_map_get(map_t* map, void const* key, uint64_t key_size, uint64_t* value_size);
 void* std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size);
 uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size);
 uint8_t std_map_contains(map_t* map, void const* key, uint64_t key_size);

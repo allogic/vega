@@ -176,7 +176,8 @@ void* std_dat_value(dat_t* dat, uint64_t index)
 {
 	TRACY_ZONE_BEGIN
 
-	void* value = std_vector_get(&dat->values, index);
+	uint64_t dense_index = std_dat_get_dense_index(dat, index);
+	void* value = std_vector_get(&dat->values, dense_index);
 
 	TRACY_ZONE_END
 

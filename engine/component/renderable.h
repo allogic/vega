@@ -5,14 +5,13 @@
 
 #include <vega/core/core.h>
 
-#include <vega/engine/renderer/material.h>
-#include <vega/engine/renderer/mesh.h>
+#include <vega/engine/asset/material.h>
+#include <vega/engine/asset/mesh.h>
 
 typedef struct _renderable_t
 {
-	material_type_t material_type;
-	void* material;
-	mesh_t* mesh;
+	mesh_asset_t* mesh_asset;
+	material_asset_t* material_asset;
 } renderable_t;
 
 #endif // VEGA_INSTANCE_COMPONENT_RENDERABLE_H

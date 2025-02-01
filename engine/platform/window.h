@@ -149,7 +149,7 @@ void platform_window_begin_frame(void);
 void platform_window_poll_events(void);
 void platform_window_render_frame(void);
 void platform_window_end_frame(void);
-uint8_t platform_window_should_not_close(void);
+uint8_t platform_window_should_close(void);
 
 uint8_t platform_window_is_keyboard_key_pressed(keyboard_key Key);
 uint8_t platform_window_is_keyboard_key_held(keyboard_key Key);

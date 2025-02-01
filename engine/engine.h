@@ -9,16 +9,13 @@
 
 #include <vega/engine/component/camera.h>
 #include <vega/engine/component/renderable.h>
+#include <vega/engine/component/scene_controller.h>
 #include <vega/engine/component/transform.h>
 #include <vega/engine/component/types.h>
 
 #include <vega/engine/entity/scene_editor.h>
 
 #include <vega/engine/platform/window.h>
-
-#include <vega/engine/renderer/material.h>
-#include <vega/engine/renderer/mesh.h>
-#include <vega/engine/renderer/vertex.h>
 
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/command_buffer.h>

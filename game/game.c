@@ -22,6 +22,7 @@ int main(int argc, char** argv, char** envp)
 	asset_loader_alloc();
 
 	asset_loader_load_model("cyberdemon", "cyberdemon", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cyberdemon\\cyberdemon.fbx");
+	//asset_loader_load_model("cockpit", "cockpit", "fbx", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit", "C:\\Users\\mialb\\Downloads\\vega\\assets\\cockpit\\cockpit.fbx");
 
 	scene_stack_alloc();
 
@@ -31,15 +32,26 @@ int main(int argc, char** argv, char** envp)
 
 	if (scene)
 	{
-		//uint64_t cyberdemon_entity = scene_create_entity_from_model_asset(scene, 0);
+		uint64_t cyberdemon_entity = scene_create_entity_from_model_asset(scene, "cyberdemon");
+		//uint64_t cockpit_entity = scene_create_entity_from_model_asset(scene, "cockpit");
 	}
 
-	while (platform_window_should_not_close())
+	while (platform_window_should_close() == 0)
 	{
 		platform_window_begin_frame();
+
 		platform_window_poll_events();
+
+		scene_t* scene = scene_current();
+
+		if (scene)
+		{
+			scene_update(scene);
+		}
+
 		platform_window_render_frame();
-		platform_window_begin_frame();
+
+		platform_window_end_frame();
 	}
 
 	scene_pop();
@@ -50,7 +62,7 @@ int main(int argc, char** argv, char** envp)
 
 	platform_window_free();
 
-	assert(g_heap_allocated_bytes == 0);
+	VEGA_ASSERT(g_heap_allocated_bytes == 0, "Memory leak detected");
 
 	TRACY_ZONE_END
 

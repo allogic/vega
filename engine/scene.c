@@ -1,14 +1,20 @@
+#include <stdio.h> // TODO
 #include <string.h>
 
 #include <vega/engine/engine.h>
 #include <vega/engine/scene.h>
 
+#include <vega/engine/asset/loader.h>
+
 #include <vega/engine/component/camera.h>
 #include <vega/engine/component/renderable.h>
+#include <vega/engine/component/scene_controller.h>
 #include <vega/engine/component/transform.h>
 #include <vega/engine/component/types.h>
 
 #include <vega/engine/entity/scene_editor.h>
+
+#include <vega/engine/vulkan/renderer.h>
 
 #ifndef TRACY_ZONE_BEGIN
 	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
@@ -18,7 +24,11 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
+static void scene_update_controller_proc(ecs_t* ecs, uint64_t entity);
+
 vector_t g_scene_stack = { 0 };
+
+static ecs_query_t s_scene_stack_controller_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_SCENE_CONTROLLER };
 
 void scene_stack_alloc(void)
 {
@@ -53,6 +63,7 @@ void scene_push(void)
 	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_TRANSFORM, sizeof(transform_t));
 	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_CAMERA, sizeof(camera_t));
 	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_RENDERABLE, sizeof(renderable_t));
+	std_ecs_register(&scene.ecs, VEGA_COMPONENT_TYPE_SCENE_CONTROLLER, sizeof(scene_controller_t));
 
 	scene.scene_editor = entity_scene_editor_create(&scene.ecs);
 
@@ -71,6 +82,15 @@ void scene_pop(void)
 
 	TRACY_ZONE_END
 }
+void scene_update(scene_t* scene)
+{
+	TRACY_ZONE_BEGIN
+
+	std_ecs_query(&scene->ecs, &s_scene_stack_controller_query);
+	std_ecs_for(&scene->ecs, &s_scene_stack_controller_query, scene_update_controller_proc);
+
+	TRACY_ZONE_END
+}
 scene_t* scene_current(void)
 {
 	TRACY_ZONE_BEGIN
@@ -86,23 +106,66 @@ scene_t* scene_current(void)
 
 	return current;
 }
-uint64_t scene_create_entity_from_asset(scene_t* scene, model_asset_t* model_asset)
+uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_name)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t entity = std_ecs_create(&scene->ecs);
+	uint64_t root_entity = std_ecs_create(&scene->ecs);
 
-	scene_create_entity_from_asset_recursive(scene, model_asset, entity);
+	transform_t root_transform = transform_identity();
+
+	std_ecs_attach(&scene->ecs, root_entity, VEGA_COMPONENT_TYPE_TRANSFORM, &root_transform);
+
+	model_asset_t* model_asset = (model_asset_t*)std_map_get(&g_asset_loader_models, asset_name, strlen(asset_name), 0);
+
+	uint64_t mesh_ref_index = 0;
+	uint64_t mesh_ref_count = std_vector_count(&model_asset->mesh_refs);
+	while (mesh_ref_index < mesh_ref_count)
+	{
+		string_t* mesh_ref = std_vector_get(&model_asset->mesh_refs, mesh_ref_index);
+
+		mesh_asset_t* mesh_asset = (mesh_asset_t*)std_map_get(&g_asset_loader_meshes, std_string_buffer(mesh_ref), std_string_size(mesh_ref), 0);
+		material_asset_t* material_asset = (material_asset_t*)std_map_get(&g_asset_loader_materials, std_string_buffer(&mesh_asset->material_ref), std_string_size(&mesh_asset->material_ref), 0);
+
+		uint64_t mesh_entity = std_ecs_create(&scene->ecs); // TODO: make parent-child relationship..
+
+		transform_t mesh_transform = transform_identity();
+
+		renderable_t mesh_renderable = { 0 };
+		mesh_renderable.mesh_asset = mesh_asset;
+		mesh_renderable.material_asset = material_asset;
+
+		std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_TRANSFORM, &mesh_transform);
+		std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_RENDERABLE, &mesh_renderable);
+
+		mesh_ref_index++;
+	}
+
+	vulkan_renderer_update_pbr_descriptor_sets(); // TODO
 
 	TRACY_ZONE_END
 
-	return entity;
+	return root_entity;
 }
 void scene_create_entity_from_asset_recursive(scene_t* scene, model_asset_t* model_asset, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 
 	// TODO
+
+	TRACY_ZONE_END
+}
+static void scene_update_controller_proc(ecs_t* ecs, uint64_t entity)
+{
+	TRACY_ZONE_BEGIN
+
+	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM);
+	scene_controller_t* scene_controller = (scene_controller_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_SCENE_CONTROLLER);
+
+	scene_controller_handle_position(scene_controller, transform);
+	scene_controller_handle_rotation(scene_controller, transform);
+
+	printf("%f %f %f\n", transform->world_position.x, transform->world_position.y, transform->world_position.z);
 
 	TRACY_ZONE_END
 }

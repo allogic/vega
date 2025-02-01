@@ -278,7 +278,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	memset(&depth_stencil_state_create_info, 0, sizeof(VkPipelineDepthStencilStateCreateInfo));
 
 	depth_stencil_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depth_stencil_state_create_info.depthTestEnable = 1;
+	depth_stencil_state_create_info.depthTestEnable = 0; // TODO: why is this not working..
 	depth_stencil_state_create_info.depthWriteEnable = 1;
 	depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
 	depth_stencil_state_create_info.depthBoundsTestEnable = 0;

@@ -6,7 +6,6 @@ add_subdirectory (asset)
 add_subdirectory (component)
 add_subdirectory (entity)
 add_subdirectory (platform)
-add_subdirectory (renderer)
 add_subdirectory (vulkan)
 
 target_compile_definitions (engine PUBLIC "_CRT_SECURE_NO_WARNINGS")

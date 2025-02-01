@@ -45,6 +45,36 @@ map_t std_map_alloc()
 
 	return map;
 }
+void* std_map_get(map_t* map, void const* key, uint64_t key_size, uint64_t* value_size)
+{
+	TRACY_ZONE_BEGIN
+
+	void* existing_value = 0;
+
+	uint64_t hash = std_map_hash(map, key, key_size, map->table_count);
+
+	map_pair_t* curr = map->table[hash];
+	while (curr)
+	{
+		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		{
+			existing_value = curr->value;
+
+			if (value_size)
+			{
+				*value_size = curr->value_size;
+			}
+
+			break;
+		}
+
+		curr = curr->next;
+	}
+
+	TRACY_ZONE_END
+
+	return existing_value;
+}
 void* std_map_insert(map_t* map, void const* key, uint64_t key_size, void const* value, uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN

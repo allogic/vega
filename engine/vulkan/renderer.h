@@ -18,11 +18,16 @@ typedef struct _screen_info_t
 	vector2_t size;
 } screen_info_t;
 
-typedef struct _projection_info_t
+typedef struct _camera_info_t
 {
 	matrix4_t view;
 	matrix4_t projection;
-} projection_info_t;
+} camera_info_t;
+
+typedef struct _entity_info_t
+{
+	matrix4_t model;
+} entity_info_t;
 
 ///////////////////////////////////////////////////////////////
 // Public API
@@ -35,6 +40,9 @@ void vulkan_renderer_free(void);
 void vulkan_renderer_resize_before(void);
 void vulkan_renderer_resize_after(void);
 
+void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count);
+void vulkan_renderer_update_pbr_descriptor_sets(void);
+
 ///////////////////////////////////////////////////////////////
 // Internal API
 ///////////////////////////////////////////////////////////////
@@ -45,9 +53,6 @@ void vulkan_renderer_render_pass_alloc(void);
 void vulkan_renderer_frame_buffer_alloc(void);
 
 void vulkan_renderer_update_uniform_buffers(void);
-
-void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count);
-void vulkan_renderer_update_pbr_descriptor_sets(void);
 
 void vulkan_renderer_record_compute_command_buffer(void);
 void vulkan_renderer_record_graphic_command_buffer(uint32_t image_index);
