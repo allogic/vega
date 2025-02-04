@@ -7,6 +7,8 @@
 
 #include <vega/engine/vulkan/image.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _texture_asset_t
 {
 	string_t name;
@@ -22,5 +24,7 @@ typedef struct _texture_asset_t
 	uint8_t* buffer;
 	image_t image;
 } texture_asset_t;
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_ASSET_TEXTURE_H

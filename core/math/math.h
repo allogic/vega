@@ -4,7 +4,11 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/forward.h>
+
+VEGA_EXTERN_C_BEGIN
 
 ///////////////////////////////////////////////////////////////
 // Inline Definition
@@ -30,5 +34,13 @@ __forceinline double math_fast_inverse_sqrt(double a)
 
 	return r;
 }
+__forceinline double math_clamp(double a, double min, double max)
+{
+	if (a > max) a = max;
+	else if (a < min) a = min;
+	return a;
+}
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_H

@@ -2,7 +2,7 @@
 
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/command_buffer.h>
-#include <vega/engine/vulkan/instance.h>
+#include <vega/engine/vulkan/device.h>
 #include <vega/engine/vulkan/vulkan.h>
 
 #ifndef TRACY_ZONE_BEGIN
@@ -157,50 +157,38 @@ buffer_t vulkan_buffer_storage_coherent_alloc(uint64_t size)
 
 	return target_buffer;
 }
-buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memory_properties)
+buffer_t vulkan_buffer_alloc(uint64_t size, VkBufferUsageFlags buffer_usage, VkMemoryPropertyFlags memory_properties)
 {
 	TRACY_ZONE_BEGIN
 
 	buffer_t buffer = { 0 };
 	buffer.size = size;
+	buffer.buffer_usage = buffer_usage;
+	buffer.memory_properties = memory_properties;
 
 	VkBufferCreateInfo buffer_create_info = { 0 };
 	buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	buffer_create_info.size = size;
-	buffer_create_info.usage = usage;
+	buffer_create_info.usage = buffer_usage;
 	buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	vkCreateBuffer(g_vulkan_instance_device, &buffer_create_info, 0, &buffer.buffer);
+	vkCreateBuffer(g_vulkan_device, &buffer_create_info, 0, &buffer.buffer);
 
-	VkMemoryRequirements memory_requirements;
-	vkGetBufferMemoryRequirements(g_vulkan_instance_device, buffer.buffer, &memory_requirements);
+	VkMemoryRequirements memory_requirements = { 0 };
+
+	vkGetBufferMemoryRequirements(g_vulkan_device, buffer.buffer, &memory_requirements);
 
 	VkMemoryAllocateInfo memory_allocate_info = { 0 };
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_allocate_info.allocationSize = memory_requirements.size;
 	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, memory_properties);
 
-	vkAllocateMemory(g_vulkan_instance_device, &memory_allocate_info, 0, &buffer.device_memory);
-	vkBindBufferMemory(g_vulkan_instance_device, buffer.buffer, buffer.device_memory, 0);
+	vkAllocateMemory(g_vulkan_device, &memory_allocate_info, 0, &buffer.device_memory);
+	vkBindBufferMemory(g_vulkan_device, buffer.buffer, buffer.device_memory, 0);
 
 	TRACY_ZONE_END
 
 	return buffer;
-}
-void vulkan_buffer_free(buffer_t* buffer)
-{
-	TRACY_ZONE_BEGIN
-
-	if (buffer->mapped_buffer)
-	{
-		vkUnmapMemory(g_vulkan_instance_device, buffer->device_memory);
-	}
-
-	vkFreeMemory(g_vulkan_instance_device, buffer->device_memory, 0);
-
-	vkDestroyBuffer(g_vulkan_instance_device, buffer->buffer, 0);
-
-	TRACY_ZONE_END
 }
 void vulkan_buffer_copy_to_buffer(buffer_t* buffer, buffer_t* target, VkCommandBuffer command_buffer)
 {
@@ -240,7 +228,7 @@ void vulkan_buffer_map(buffer_t* buffer)
 {
 	TRACY_ZONE_BEGIN
 
-	vkMapMemory(g_vulkan_instance_device, buffer->device_memory, 0, buffer->size, 0, &buffer->mapped_buffer);
+	vkMapMemory(g_vulkan_device, buffer->device_memory, 0, buffer->size, 0, &buffer->mapped_buffer);
 
 	TRACY_ZONE_END
 }
@@ -248,9 +236,101 @@ void vulkan_buffer_unmap(buffer_t* buffer)
 {
 	TRACY_ZONE_BEGIN
 
-	vkUnmapMemory(g_vulkan_instance_device, buffer->device_memory);
+	vkUnmapMemory(g_vulkan_device, buffer->device_memory);
 
 	buffer->mapped_buffer = 0;
+
+	TRACY_ZONE_END
+}
+void vulkan_buffer_resize(buffer_t* buffer, uint64_t size)
+{
+	TRACY_ZONE_BEGIN
+
+	uint64_t old_size = buffer->size;
+	VkBufferUsageFlags old_buffer_usage = buffer->buffer_usage;
+	VkMemoryPropertyFlags old_memory_properties = buffer->memory_properties;
+	VkBuffer old_buffer = buffer->buffer;
+	VkDeviceMemory old_device_memory = buffer->device_memory;
+	void* old_mapped_buffer = buffer->mapped_buffer;
+
+	uint64_t new_size = size;
+	VkBufferUsageFlags new_buffer_usage = buffer->buffer_usage;
+	VkMemoryPropertyFlags new_memory_properties = buffer->memory_properties;
+	VkBuffer new_buffer = 0;
+	VkDeviceMemory new_device_memory = 0;
+	void* new_mapped_buffer = 0;
+
+	VkBufferCreateInfo buffer_create_info = { 0 };
+	buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	buffer_create_info.size = size;
+	buffer_create_info.usage = new_buffer_usage;
+	buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	vkCreateBuffer(g_vulkan_device, &buffer_create_info, 0, &new_buffer);
+
+	VkMemoryRequirements memory_requirements = { 0 };
+
+	vkGetBufferMemoryRequirements(g_vulkan_device, new_buffer, &memory_requirements);
+
+	VkMemoryAllocateInfo memory_allocate_info = { 0 };
+	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memory_allocate_info.allocationSize = memory_requirements.size;
+	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, new_memory_properties);
+
+	vkAllocateMemory(g_vulkan_device, &memory_allocate_info, 0, &new_device_memory);
+	vkBindBufferMemory(g_vulkan_device, new_buffer, new_device_memory, 0);
+
+	if (old_mapped_buffer == 0)
+	{
+		vkMapMemory(g_vulkan_device, old_device_memory, 0, old_size, 0, &old_mapped_buffer);
+	}
+
+	if (new_mapped_buffer == 0)
+	{
+		vkMapMemory(g_vulkan_device, new_device_memory, 0, new_size, 0, &new_mapped_buffer);
+	}
+
+	memcpy(new_mapped_buffer, old_mapped_buffer, VEGA_MIN(old_size, new_size));
+
+	if (old_mapped_buffer)
+	{
+		vkUnmapMemory(g_vulkan_device, old_device_memory);
+
+		old_mapped_buffer = 0;
+	}
+
+	vkFreeMemory(g_vulkan_device, old_device_memory, 0);
+
+	vkDestroyBuffer(g_vulkan_device, old_buffer, 0);
+
+	if (VEGA_IS_BIT_SET(new_memory_properties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+	{
+		vkUnmapMemory(g_vulkan_device, new_device_memory);
+
+		new_mapped_buffer = 0;
+	}
+
+	buffer->size = new_size;
+	buffer->buffer_usage = new_buffer_usage;
+	buffer->memory_properties = new_memory_properties;
+	buffer->buffer = new_buffer;
+	buffer->device_memory = new_device_memory;
+	buffer->mapped_buffer = new_mapped_buffer;
+
+	TRACY_ZONE_END
+}
+void vulkan_buffer_free(buffer_t* buffer)
+{
+	TRACY_ZONE_BEGIN
+
+	if (buffer->mapped_buffer)
+	{
+		vkUnmapMemory(g_vulkan_device, buffer->device_memory);
+	}
+
+	vkFreeMemory(g_vulkan_device, buffer->device_memory, 0);
+
+	vkDestroyBuffer(g_vulkan_device, buffer->buffer, 0);
 
 	TRACY_ZONE_END
 }

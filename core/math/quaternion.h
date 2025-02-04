@@ -11,8 +11,12 @@
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
+
+VEGA_EXTERN_C_BEGIN
 
 ///////////////////////////////////////////////////////////////
 // Inline Definition
@@ -42,7 +46,7 @@ __forceinline quaternion_t math_quaternion_identity(void)
 
 	return r;
 }
-__forceinline quaternion_t math_quaternion_from_xyzw(double x, double y, double z, double w)
+__forceinline quaternion_t math_quaternion_xyzw(double x, double y, double z, double w)
 {
 	quaternion_t r =
 	{
@@ -344,5 +348,7 @@ __forceinline void math_quaternion_print(quaternion_t a)
 {
 	printf("[%f, %f, %f, %f]\n", a.x, a.y, a.z, a.w);
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_QUATERNION_H

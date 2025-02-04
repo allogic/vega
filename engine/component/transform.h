@@ -5,6 +5,8 @@
 
 #include <vega/core/core.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _transform_t
 {
 	struct _transform_t* parent;
@@ -20,13 +22,14 @@ typedef struct _transform_t
 	vector3_t world_position;
 	quaternion_t world_rotation;
 	vector3_t world_scale;
+	fvector64_t children;
 } transform_t;
 
 ///////////////////////////////////////////////////////////////
 // Public API
 ///////////////////////////////////////////////////////////////
 
-transform_t transform_identity(void);
+void transform_identity(transform_t* transform, transform_t* parent);
 
 __forceinline vector3_t transform_get_world_position(transform_t* transform);
 __forceinline quaternion_t transform_get_world_rotation(transform_t* transform);
@@ -105,11 +108,22 @@ __forceinline void transform_compute_world_position(transform_t* transform)
 {
 	if (transform->parent)
 	{
-		transform->world_position = math_vector3_add(transform->world_position, math_vector3_rotate(transform->local_position, transform->parent->world_rotation));
+		transform->world_position = math_vector3_add(transform->parent->world_position, math_vector3_rotate(transform->local_position, transform->parent->world_rotation));
 	}
 	else
 	{
 		transform->world_position = transform->local_position;
+	}
+
+	uint64_t child_index = 0;
+	uint64_t child_count = std_fvector64_count(&transform->children);
+	while (child_index < child_count)
+	{
+		transform_t* child_transform = (transform_t*)std_fvector64_get(&transform->children, child_index);
+
+		transform_compute_world_position(child_transform);
+
+		child_index++;
 	}
 }
 __forceinline void transform_compute_world_rotation(transform_t* transform)
@@ -122,6 +136,17 @@ __forceinline void transform_compute_world_rotation(transform_t* transform)
 	{
 		transform->world_rotation = transform->local_rotation;
 	}
+
+	uint64_t child_index = 0;
+	uint64_t child_count = std_fvector64_count(&transform->children);
+	while (child_index < child_count)
+	{
+		transform_t* child_transform = (transform_t*)std_fvector64_get(&transform->children, child_index);
+
+		transform_compute_world_rotation(child_transform);
+
+		child_index++;
+	}
 }
 __forceinline void transform_compute_world_scale(transform_t* transform)
 {
@@ -133,6 +158,19 @@ __forceinline void transform_compute_world_scale(transform_t* transform)
 	{
 		transform->world_scale = transform->local_scale;
 	}
+
+	uint64_t child_index = 0;
+	uint64_t child_count = std_fvector64_count(&transform->children);
+	while (child_index < child_count)
+	{
+		transform_t* child_transform = (transform_t*)std_fvector64_get(&transform->children, child_index);
+
+		transform_compute_world_scale(child_transform);
+
+		child_index++;
+	}
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_COMPONENT_TRANSFORM_H

@@ -60,11 +60,14 @@ void* std_set_insert(set_t* set, void const* key, uint64_t key_size)
 	set_entry_t* curr = set->table[hash];
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			existing_key = curr->key;
+			if (memcmp(curr->key, key, curr->key_size) == 0)
+			{
+				existing_key = curr->key;
 
-			break;
+				break;
+			}
 		}
 
 		curr = curr->next;
@@ -103,25 +106,28 @@ uint8_t std_set_remove(set_t* set, void const* key, uint64_t key_size)
 	set_entry_t* prev = 0;
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			if (prev)
+			if (memcmp(curr->key, key, curr->key_size) == 0)
 			{
-				prev->next = curr->next;
+				if (prev)
+				{
+					prev->next = curr->next;
+				}
+				else
+				{
+					set->table[hash] = curr->next;
+				}
+
+				heap_free(curr->key);
+				heap_free(curr);
+
+				set->entry_count--;
+
+				removed = 1;
+
+				break;
 			}
-			else
-			{
-				set->table[hash] = curr->next;
-			}
-
-			heap_free(curr->key);
-			heap_free(curr);
-
-			set->entry_count--;
-
-			removed = 1;
-
-			break;
 		}
 
 		prev = curr;
@@ -143,11 +149,14 @@ uint8_t std_set_contains(set_t* set, void const* key, uint64_t key_size)
 	set_entry_t* curr = set->table[hash];
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			contains = 1;
+			if (memcmp(curr->key, key, curr->key_size) == 0)
+			{
+				contains = 1;
 
-			break;
+				break;
+			}
 		}
 
 		curr = curr->next;

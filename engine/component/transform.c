@@ -10,28 +10,31 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
-transform_t transform_identity(void)
+void transform_identity(transform_t* transform, transform_t* parent)
 {
 	TRACY_ZONE_BEGIN
 
-	transform_t transform = { 0 };
-	transform.parent = 0;
-	transform.local_right = g_world_right;
-	transform.local_up = g_world_up;
-	transform.local_front = g_world_front;
-	transform.local_left = g_world_left;
-	transform.local_down = g_world_down;
-	transform.local_back = g_world_back;
-	transform.local_position = math_vector3_zero();
-	transform.local_rotation = math_quaternion_identity();
-	transform.local_scale = math_vector3_one();
-	transform.world_position = math_vector3_zero();
-	transform.world_rotation = math_quaternion_identity();
-	transform.world_scale = math_vector3_one();
+	transform->parent = parent;
+	transform->local_right = g_world_right;
+	transform->local_up = g_world_up;
+	transform->local_front = g_world_front;
+	transform->local_left = g_world_left;
+	transform->local_down = g_world_down;
+	transform->local_back = g_world_back;
+	transform->local_position = math_vector3_zero();
+	transform->local_rotation = math_quaternion_identity();
+	transform->local_scale = math_vector3_one();
+	transform->world_position = math_vector3_zero();
+	transform->world_rotation = math_quaternion_identity();
+	transform->world_scale = math_vector3_one();
+	transform->children = std_fvector64_alloc();
+
+	if (parent)
+	{
+		std_fvector64_push(&parent->children, (uint64_t)transform);
+	}
 
 	TRACY_ZONE_END
-
-	return transform;
 }
 void transform_set_position(transform_t* transform, vector3_t position)
 {
@@ -138,9 +141,9 @@ void transform_set_euler_angles(transform_t* transform, vector3_t rotation)
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 	else
 	{
@@ -161,9 +164,9 @@ void transform_set_euler_angles(transform_t* transform, vector3_t rotation)
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 
 	transform_compute_world_rotation(transform);
@@ -198,9 +201,9 @@ void transform_set_euler_angles_pyr(transform_t* transform, double p, double y, 
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 	else
 	{
@@ -221,9 +224,9 @@ void transform_set_euler_angles_pyr(transform_t* transform, double p, double y, 
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 
 	transform_compute_world_rotation(transform);
@@ -259,9 +262,9 @@ void transform_set_relative_euler_angles(transform_t* transform, vector3_t rotat
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 	else
 	{
@@ -283,9 +286,9 @@ void transform_set_relative_euler_angles(transform_t* transform, vector3_t rotat
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 
 	transform_compute_world_rotation(transform);
@@ -321,9 +324,9 @@ void transform_set_relative_euler_angles_pyr(transform_t* transform, double p, d
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 	else
 	{
@@ -345,9 +348,9 @@ void transform_set_relative_euler_angles_pyr(transform_t* transform, double p, d
 		transform->local_up = math_vector3_norm(lu);
 		transform->local_front = math_vector3_norm(lf);
 
-		transform->local_left = math_vector3_from_xyz(-transform->local_right.x, -transform->local_right.y, -transform->local_right.z);
-		transform->local_down = math_vector3_from_xyz(-transform->local_up.x, -transform->local_up.y, -transform->local_up.z);
-		transform->local_back = math_vector3_from_xyz(-transform->local_front.x, -transform->local_front.y, -transform->local_front.z);
+		transform->local_left = math_vector3_invert(transform->local_right);
+		transform->local_down = math_vector3_invert(transform->local_up);
+		transform->local_back = math_vector3_invert(transform->local_front);
 	}
 
 	transform_compute_world_rotation(transform);

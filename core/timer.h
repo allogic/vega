@@ -1,6 +1,12 @@
 #ifndef VEGA_CORE_TIMER_H
 #define VEGA_CORE_TIMER_H
 
+#include <stdint.h>
+
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _timer_t
 {
 	double freq;
@@ -36,5 +42,7 @@ __forceinline double timer_ms(timer_t* timer)
 {
 	return timer->ns / 1000000.0;
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_TIMER_H

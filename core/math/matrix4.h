@@ -11,10 +11,14 @@
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
 
 // TODO: properly vectorize matrix4..
+
+VEGA_EXTERN_C_BEGIN
 
 ///////////////////////////////////////////////////////////////
 // Inline Definition
@@ -282,5 +286,7 @@ __forceinline void math_matrix4_print(matrix4_t a)
 	printf("[%f, %f, %f, %f]\n", a.m20, a.m21, a.m22, a.m23);
 	printf("[%f, %f, %f, %f]\n", a.m30, a.m31, a.m32, a.m33);
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_MATRIX4_H

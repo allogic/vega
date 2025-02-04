@@ -10,6 +10,8 @@
 #include <vega/engine/asset/model.h>
 #include <vega/engine/asset/texture.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _model_asset_thread_args_t
 {
 	model_asset_t* model_asset;
@@ -58,5 +60,7 @@ void asset_loader_print_stats(struct aiScene const* assimp_scene);
 vector_t asset_loader_material_tokenize_property_key(struct aiMaterialProperty const* assimp_material_property);
 
 void asset_loader_build_gpu_resources(void);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_ASSET_LOADER_H

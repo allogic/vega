@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 ///////////////////////////////////////////////////////////////
 // Public API
 ///////////////////////////////////////////////////////////////
@@ -34,5 +38,7 @@ double random_real64(void);
 
 float random_real32_between(float min, float max);
 double random_real64_between(double min, double max);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_RANDOM_H

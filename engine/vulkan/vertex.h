@@ -5,6 +5,8 @@
 
 #include <vega/core/core.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _pbr_vertex_t
 {
 	vector4_t position;
@@ -17,5 +19,7 @@ typedef struct _pbr_vertex_t
 	vector4_t bone_indices; // TODO
 	vector4_t bone_weights; // TODO
 } pbr_vertex_t;
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_VULKAN_VERTEX_H

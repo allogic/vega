@@ -5,6 +5,8 @@
 
 #include <vega/core/core.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef enum _camera_mode_t
 {
 	CAMERA_MODE_ORTHO,
@@ -28,5 +30,7 @@ typedef struct _camera_t
 	double near_z;
 	double far_z;
 } camera_t;
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_COMPONENT_CAMERA_H

@@ -1,6 +1,10 @@
 #ifndef VEGA_CORE_MATH_FORWARD_H
 #define VEGA_CORE_MATH_FORWARD_H
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _vector2_t
 {
 	double x;
@@ -45,10 +49,12 @@ typedef struct _matrix4_t
 __forceinline double math_deg_to_rad(double a);
 __forceinline double math_rad_to_deg(double a);
 __forceinline double math_fast_inverse_sqrt(double a);
+__forceinline double math_clamp(double a, double min, double max);
 
 __forceinline vector2_t math_vector2_zero(void);
 __forceinline vector2_t math_vector2_one(void);
-__forceinline vector2_t math_vector2_from_xy(double x, double y);
+__forceinline vector2_t math_vector2_xy(double x, double y);
+__forceinline vector2_t math_vector2_invert(vector2_t a);
 __forceinline vector2_t math_vector2_add(vector2_t a, vector2_t b);
 __forceinline vector2_t math_vector2_sub(vector2_t a, vector2_t b);
 __forceinline vector2_t math_vector2_mul(vector2_t a, vector2_t b);
@@ -65,7 +71,8 @@ __forceinline void math_vector2_print(vector2_t a);
 
 __forceinline vector3_t math_vector3_zero(void);
 __forceinline vector3_t math_vector3_one(void);
-__forceinline vector3_t math_vector3_from_xyz(double x, double y, double z);
+__forceinline vector3_t math_vector3_xyz(double x, double y, double z);
+__forceinline vector3_t math_vector3_invert(vector3_t a);
 __forceinline vector3_t math_vector3_add(vector3_t a, vector3_t b);
 __forceinline vector3_t math_vector3_sub(vector3_t a, vector3_t b);
 __forceinline vector3_t math_vector3_mul(vector3_t a, vector3_t b);
@@ -84,7 +91,8 @@ __forceinline void math_vector3_print(vector3_t a);
 
 __forceinline vector4_t math_vector4_zero(void);
 __forceinline vector4_t math_vector4_one(void);
-__forceinline vector4_t math_vector4_from_xyzw(double x, double y, double z, double w);
+__forceinline vector4_t math_vector4_xyzw(double x, double y, double z, double w);
+__forceinline vector4_t math_vector4_invert(vector4_t a);
 __forceinline vector4_t math_vector4_add(vector4_t a, vector4_t b);
 __forceinline vector4_t math_vector4_sub(vector4_t a, vector4_t b);
 __forceinline vector4_t math_vector4_mul(vector4_t a, vector4_t b);
@@ -101,7 +109,7 @@ __forceinline void math_vector4_print(vector4_t a);
 
 __forceinline quaternion_t math_quaternion_zero(void);
 __forceinline quaternion_t math_quaternion_identity(void);
-__forceinline quaternion_t math_quaternion_from_xyzw(double x, double y, double z, double w);
+__forceinline quaternion_t math_quaternion_xyzw(double x, double y, double z, double w);
 __forceinline quaternion_t math_quaternion_mul(quaternion_t a, quaternion_t b);
 __forceinline quaternion_t math_quaternion_mul_scalar(quaternion_t a, double b);
 __forceinline quaternion_t math_quaternion_conjugate(quaternion_t a);
@@ -110,7 +118,7 @@ __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y,
 __forceinline quaternion_t math_quaternion_from_euler_angles(vector3_t a);
 __forceinline quaternion_t math_quaternion_from_euler_angles_xyz(double x, double y, double z);
 __forceinline quaternion_t math_quaternion_angle_axis(double a, vector3_t b);
-__forceinline quaternion_t math_quaternion_norm(quaternion_t a); // TODO: norm using inversesqrt..
+__forceinline quaternion_t math_quaternion_norm(quaternion_t a);
 __forceinline double math_quaternion_dot(quaternion_t a, quaternion_t b);
 __forceinline double math_quaternion_length(quaternion_t a);
 __forceinline double math_quaternion_length2(quaternion_t a);
@@ -140,5 +148,7 @@ __forceinline matrix4_t math_matrix4_ortho(double left, double right, double bot
 __forceinline matrix4_t math_matrix4_persp(double fov, double aspect_ratio, double near_z, double far_z);
 __forceinline matrix4_t math_matrix4_look_at(vector3_t eye, vector3_t center, vector3_t up);
 __forceinline void math_matrix4_print(matrix4_t a);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_FORWARD_H

@@ -1,4 +1,4 @@
-file (GLOB SRC_FILES "*.c")
+file (GLOB SRC_FILES "*.cpp")
 
 add_executable (game ${SRC_FILES})
 

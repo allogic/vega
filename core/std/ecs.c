@@ -70,7 +70,7 @@ void std_ecs_delete(ecs_t* ecs, uint64_t entity)
 	uint64_t pool_index = 0;
 	while (pool_index < 64)
 	{
-		if (IS_BIT_SET(mask, pool_index))
+		if (VEGA_IS_BIT_SET(mask, pool_index))
 		{
 			std_dat_remove(&ecs->pools[pool_index], entity);
 		}
@@ -89,14 +89,14 @@ void std_ecs_register(ecs_t* ecs, uint64_t component, uint64_t value_size)
 {
 	TRACY_ZONE_BEGIN
 
-	if (IS_BIT_SET(ecs->active_pools, component))
+	if (VEGA_IS_BIT_SET(ecs->active_pools, component))
 	{
 		std_dat_free(&ecs->pools[component]);
 
 		ecs->active_pool_count--;
 	}
 
-	ecs->active_pools = SET_BIT(ecs->active_pools, component);
+	ecs->active_pools = VEGA_SET_BIT(ecs->active_pools, component);
 	ecs->active_pool_count++;
 
 	ecs->pools[component] = std_dat_alloc(value_size);
@@ -111,17 +111,21 @@ void std_ecs_unregister(ecs_t* ecs, uint64_t component)
 
 	TRACY_ZONE_END
 }
-void std_ecs_attach(ecs_t* ecs, uint64_t entity, uint64_t component, void const* value)
+void* std_ecs_attach(ecs_t* ecs, uint64_t entity, uint64_t component, void const* value)
 {
 	TRACY_ZONE_BEGIN
 
 	std_dat_set(&ecs->pools[component], entity, value);
 
 	uint64_t mask = std_fdat64_get(&ecs->masks, entity);
-	mask = SET_BIT(mask, component);
+	mask = VEGA_SET_BIT(mask, component);
 	std_fdat64_set(&ecs->masks, entity, mask);
 
+	void* result = std_dat_get(&ecs->pools[component], entity);
+
 	TRACY_ZONE_END
+
+	return result;
 }
 void std_ecs_detach(ecs_t* ecs, uint64_t entity, uint64_t component)
 {
@@ -130,7 +134,7 @@ void std_ecs_detach(ecs_t* ecs, uint64_t entity, uint64_t component)
 	std_dat_remove(&ecs->pools[component], entity);
 
 	uint64_t mask = std_fdat64_get(&ecs->masks, entity);
-	mask = CLEAR_BIT(mask, component);
+	mask = VEGA_CLEAR_BIT(mask, component);
 	std_fdat64_set(&ecs->masks, entity, mask);
 
 	TRACY_ZONE_END
@@ -147,11 +151,11 @@ void* std_ecs_get(ecs_t* ecs, uint64_t entity, uint64_t component)
 {
 	TRACY_ZONE_BEGIN
 
-	void* value = std_dat_get(&ecs->pools[component], entity);
+	void* result = std_dat_get(&ecs->pools[component], entity);
 
 	TRACY_ZONE_END
 
-	return value;
+	return result;
 }
 void std_ecs_query(ecs_t* ecs, ecs_query_t* query)
 {
@@ -166,7 +170,7 @@ void std_ecs_query(ecs_t* ecs, ecs_query_t* query)
 	uint64_t pool_index = 0;
 	while (pool_index < 64)
 	{
-		if (IS_BIT_SET(query->mask, pool_index))
+		if (VEGA_IS_BIT_SET(query->mask, pool_index))
 		{
 			uint64_t pool_count = std_dat_count(&ecs->pools[pool_index]);
 
@@ -228,17 +232,7 @@ fvector64_t* std_ecs_entities(ecs_t* ecs)
 
 	return entities;
 }
-void* std_ecs_value(ecs_t* ecs, uint64_t entity, uint64_t component)
-{
-	TRACY_ZONE_BEGIN
-
-	void* value = std_dat_value(&ecs->pools[component], entity);
-
-	TRACY_ZONE_END
-
-	return value;
-}
-void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_func_t for_func)
+void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_proc_t for_proc)
 {
 	TRACY_ZONE_BEGIN
 
@@ -248,7 +242,7 @@ void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_func_t for_func)
 	{
 		uint64_t entity = std_dat_id(query->pool, entity_index);
 
-		for_func(ecs, entity);
+		for_proc(ecs, entity_index, entity);
 
 		entity_index++;
 	}
@@ -262,7 +256,7 @@ void std_ecs_clear(ecs_t* ecs)
 	uint64_t pool_index = 0;
 	while (pool_index < 64)
 	{
-		if (IS_BIT_SET(ecs->active_pools, pool_index))
+		if (VEGA_IS_BIT_SET(ecs->active_pools, pool_index))
 		{
 			std_dat_clear(&ecs->pools[pool_index]);
 		}
@@ -286,7 +280,7 @@ void std_ecs_free(ecs_t* ecs)
 	uint64_t pool_index = 0;
 	while (pool_index < 64)
 	{
-		if (IS_BIT_SET(ecs->active_pools, pool_index))
+		if (VEGA_IS_BIT_SET(ecs->active_pools, pool_index))
 		{
 			std_dat_free(&ecs->pools[pool_index]);
 		}

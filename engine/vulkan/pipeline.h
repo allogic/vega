@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+VEGA_EXTERN_C_BEGIN
+
 ///////////////////////////////////////////////////////////////
 // Public API
 ///////////////////////////////////////////////////////////////
@@ -21,5 +23,7 @@ void vulkan_pipeline_descriptor_pool_free(VkDescriptorPool descriptor_pool);
 void vulkan_pipeline_descriptor_set_layout_free(VkDescriptorSetLayout descriptor_set_layout);
 void vulkan_pipeline_layout_free(VkPipelineLayout pipeline_layout);
 void vulkan_pipeline_free(VkPipeline pipeline);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_VULKAN_PIPELINE_H

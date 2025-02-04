@@ -116,7 +116,7 @@ uint8_t std_dat_empty(dat_t* dat)
 {
 	TRACY_ZONE_BEGIN
 
-	uint8_t empty = std_vector_empty(&dat->values);
+	uint8_t empty = std_fvector64_empty(&dat->ids);
 
 	TRACY_ZONE_END
 
@@ -169,17 +169,6 @@ uint64_t std_dat_id(dat_t* dat, uint64_t index)
 	TRACY_ZONE_END
 
 	return id;
-}
-void* std_dat_value(dat_t* dat, uint64_t index)
-{
-	TRACY_ZONE_BEGIN
-
-	uint64_t dense_index = std_dat_get_dense_index(dat, index);
-	void* value = std_vector_get(&dat->values, dense_index);
-
-	TRACY_ZONE_END
-
-	return value;
 }
 void std_dat_free(dat_t* dat)
 {

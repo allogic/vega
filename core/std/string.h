@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _string_t
 {
 	char* buffer;
@@ -34,5 +38,7 @@ void std_string_free(string_t* string);
 ///////////////////////////////////////////////////////////////
 
 void std_string_expand(string_t* string);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_STRING_H

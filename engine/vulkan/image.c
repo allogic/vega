@@ -2,7 +2,7 @@
 
 #include <vega/engine/vulkan/buffer.h>
 #include <vega/engine/vulkan/command_buffer.h>
-#include <vega/engine/vulkan/instance.h>
+#include <vega/engine/vulkan/device.h>
 #include <vega/engine/vulkan/image.h>
 #include <vega/engine/vulkan/vulkan.h>
 
@@ -128,7 +128,7 @@ image_t vulkan_image_2d_depth_alloc(uint32_t width, uint32_t height, VkFormat fo
 
 	return target_image;
 }
-image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint32_t channels, VkImageType type, VkImageViewType view_type, VkImageUsageFlags usage, VkMemoryPropertyFlags memory_properties, VkImageAspectFlags aspect_flags, VkFormat format, VkImageTiling tiling, VkFilter filter)
+image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint32_t channels, VkImageType type, VkImageViewType view_type, VkImageUsageFlags image_usage, VkMemoryPropertyFlags memory_properties, VkImageAspectFlags aspect_flags, VkFormat format, VkImageTiling tiling, VkFilter filter)
 {
 	TRACY_ZONE_BEGIN
 
@@ -140,6 +140,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	image.channels = channels;
 	image.type = type;
 	image.view_type = view_type;
+	image.image_usage = image_usage;
 	image.format = format;
 	image.tiling = tiling;
 	image.filter = filter;
@@ -155,22 +156,23 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	image_create_info.format = format;
 	image_create_info.tiling = tiling;
 	image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	image_create_info.usage = usage;
+	image_create_info.usage = image_usage;
 	image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 	image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	vkCreateImage(g_vulkan_instance_device, &image_create_info, 0, &image.image);
+	vkCreateImage(g_vulkan_device, &image_create_info, 0, &image.image);
 
-	VkMemoryRequirements memory_requirements;
-	vkGetImageMemoryRequirements(g_vulkan_instance_device, image.image, &memory_requirements);
+	VkMemoryRequirements memory_requirements = { 0 };
+
+	vkGetImageMemoryRequirements(g_vulkan_device, image.image, &memory_requirements);
 
 	VkMemoryAllocateInfo memory_allocate_info = { 0 };
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_allocate_info.allocationSize = memory_requirements.size;
 	memory_allocate_info.memoryTypeIndex = vulkan_find_memory_type(memory_requirements.memoryTypeBits, memory_properties);
 
-	vkAllocateMemory(g_vulkan_instance_device, &memory_allocate_info, 0, &image.device_memory);
-	vkBindImageMemory(g_vulkan_instance_device, image.image, image.device_memory, 0);
+	vkAllocateMemory(g_vulkan_device, &memory_allocate_info, 0, &image.device_memory);
+	vkBindImageMemory(g_vulkan_device, image.image, image.device_memory, 0);
 
 	VkImageViewCreateInfo image_view_create_info = { 0 };
 	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -183,7 +185,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	image_view_create_info.subresourceRange.baseArrayLayer = 0;
 	image_view_create_info.subresourceRange.layerCount = 1;
 
-	vkCreateImageView(g_vulkan_instance_device, &image_view_create_info, 0, &image.image_view);
+	vkCreateImageView(g_vulkan_device, &image_view_create_info, 0, &image.image_view);
 
 	VkSamplerCreateInfo sampler_create_info = { 0 };
 	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -193,7 +195,7 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampler_create_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampler_create_info.anisotropyEnable = 1;
-	sampler_create_info.maxAnisotropy = g_vulkan_instance_physical_device_properties.limits.maxSamplerAnisotropy;
+	sampler_create_info.maxAnisotropy = g_vulkan_device_physical_properties.limits.maxSamplerAnisotropy;
 	sampler_create_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	sampler_create_info.unnormalizedCoordinates = 0;
 	sampler_create_info.compareEnable = 0;
@@ -203,28 +205,11 @@ image_t vulkan_image_alloc(uint32_t width, uint32_t height, uint32_t depth, uint
 	sampler_create_info.minLod = 0.0F;
 	sampler_create_info.maxLod = 0.0F;
 
-	vkCreateSampler(g_vulkan_instance_device, &sampler_create_info, 0, &image.sampler);
+	vkCreateSampler(g_vulkan_device, &sampler_create_info, 0, &image.sampler);
 
 	TRACY_ZONE_END
 
 	return image;
-}
-void vulkan_image_free(image_t* image)
-{
-	TRACY_ZONE_BEGIN
-
-	if (image->mapped_buffer)
-	{
-		vkUnmapMemory(g_vulkan_instance_device, image->device_memory);
-	}
-
-	vkFreeMemory(g_vulkan_instance_device, image->device_memory, 0);
-
-	vkDestroySampler(g_vulkan_instance_device, image->sampler, 0);
-	vkDestroyImageView(g_vulkan_instance_device, image->image_view, 0);
-	vkDestroyImage(g_vulkan_instance_device, image->image, 0);
-
-	TRACY_ZONE_END
 }
 void vulkan_image_copy_to_image(image_t* image, image_t* target, VkCommandBuffer command_buffer)
 {
@@ -342,7 +327,7 @@ void vulkan_image_map(image_t* image)
 {
 	TRACY_ZONE_BEGIN
 
-	vkMapMemory(g_vulkan_instance_device, image->device_memory, 0, image->size, 0, &image->mapped_buffer);
+	vkMapMemory(g_vulkan_device, image->device_memory, 0, image->size, 0, &image->mapped_buffer);
 
 	TRACY_ZONE_END
 }
@@ -350,7 +335,7 @@ void vulkan_image_unmap(image_t* image)
 {
 	TRACY_ZONE_BEGIN
 
-	vkUnmapMemory(g_vulkan_instance_device, image->device_memory);
+	vkUnmapMemory(g_vulkan_device, image->device_memory);
 
 	image->mapped_buffer = 0;
 
@@ -362,7 +347,7 @@ VkFormat vulkan_image_find_depth_format(void)
 
 	VkFormat formats[] = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
 
-	VkFormat depth_format = vulkan_image_find_supported_format(formats, ARRAY_COUNT(formats), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	VkFormat depth_format = vulkan_image_find_supported_format(formats, VEGA_ARRAY_COUNT(formats), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	TRACY_ZONE_END
 
@@ -379,7 +364,7 @@ VkFormat vulkan_image_find_supported_format(VkFormat* formats, uint64_t format_c
 	{
 		VkFormatProperties format_properties = { 0 };
 
-		vkGetPhysicalDeviceFormatProperties(g_vulkan_instance_physical_device, formats[format_index], &format_properties);
+		vkGetPhysicalDeviceFormatProperties(g_vulkan_device_physical, formats[format_index], &format_properties);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (format_properties.linearTilingFeatures & features) == features)
 		{
@@ -405,7 +390,7 @@ VkImageView vulkan_image_view_alloc(VkImage image, VkImageViewType view_type, Vk
 {
 	TRACY_ZONE_BEGIN
 
-	VkImageView image_view;
+	VkImageView image_view = 0;
 
 	VkImageViewCreateInfo image_view_create_info = { 0 };
 	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -418,7 +403,7 @@ VkImageView vulkan_image_view_alloc(VkImage image, VkImageViewType view_type, Vk
 	image_view_create_info.subresourceRange.baseArrayLayer = 0;
 	image_view_create_info.subresourceRange.layerCount = 1;
 
-	vkCreateImageView(g_vulkan_instance_device, &image_view_create_info, 0, &image_view);
+	vkCreateImageView(g_vulkan_device, &image_view_create_info, 0, &image_view);
 
 	TRACY_ZONE_END
 
@@ -428,7 +413,7 @@ VkSampler vulkan_image_sampler_alloc(VkFilter filter)
 {
 	TRACY_ZONE_BEGIN
 
-	VkSampler sampler;
+	VkSampler sampler = 0;
 
 	VkSamplerCreateInfo sampler_create_info = { 0 };
 	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -438,7 +423,7 @@ VkSampler vulkan_image_sampler_alloc(VkFilter filter)
 	sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampler_create_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampler_create_info.anisotropyEnable = 1;
-	sampler_create_info.maxAnisotropy = g_vulkan_instance_physical_device_properties.limits.maxSamplerAnisotropy;
+	sampler_create_info.maxAnisotropy = g_vulkan_device_physical_properties.limits.maxSamplerAnisotropy;
 	sampler_create_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	sampler_create_info.unnormalizedCoordinates = 0;
 	sampler_create_info.compareEnable = 0;
@@ -448,7 +433,7 @@ VkSampler vulkan_image_sampler_alloc(VkFilter filter)
 	sampler_create_info.minLod = 0.0F;
 	sampler_create_info.maxLod = 0.0F;
 
-	vkCreateSampler(g_vulkan_instance_device, &sampler_create_info, 0, &sampler);
+	vkCreateSampler(g_vulkan_device, &sampler_create_info, 0, &sampler);
 
 	TRACY_ZONE_END
 
@@ -458,7 +443,7 @@ void vulkan_image_view_free(VkImageView image_view)
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroyImageView(g_vulkan_instance_device, image_view, 0);
+	vkDestroyImageView(g_vulkan_device, image_view, 0);
 
 	TRACY_ZONE_END
 }
@@ -466,7 +451,24 @@ void vulkan_image_sampler_free(VkSampler sampler)
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroySampler(g_vulkan_instance_device, sampler, 0);
+	vkDestroySampler(g_vulkan_device, sampler, 0);
+
+	TRACY_ZONE_END
+}
+void vulkan_image_free(image_t* image)
+{
+	TRACY_ZONE_BEGIN
+
+	if (image->mapped_buffer)
+	{
+		vkUnmapMemory(g_vulkan_device, image->device_memory);
+	}
+
+	vkFreeMemory(g_vulkan_device, image->device_memory, 0);
+
+	vkDestroySampler(g_vulkan_device, image->sampler, 0);
+	vkDestroyImageView(g_vulkan_device, image->image_view, 0);
+	vkDestroyImage(g_vulkan_device, image->image, 0);
 
 	TRACY_ZONE_END
 }

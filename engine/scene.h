@@ -7,6 +7,8 @@
 
 #include <vega/engine/asset/loader.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _scene_t
 {
 	ecs_t ecs;
@@ -36,5 +38,7 @@ uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_
 ///////////////////////////////////////////////////////////////
 
 void scene_create_entity_from_asset_recursive(scene_t* scene, model_asset_t* model_asset, uint64_t entity);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_SCENE_H

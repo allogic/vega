@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _vector_t
 {
 	uint8_t* buffer;
@@ -41,5 +45,7 @@ void std_vector_free(vector_t* vector);
 ///////////////////////////////////////////////////////////////
 
 void std_vector_expand(vector_t* vector);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_VECTOR_H

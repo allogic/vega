@@ -5,6 +5,8 @@
 
 #include <vega/core/core.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _model_asset_t
 {
 	string_t name;
@@ -18,5 +20,7 @@ typedef struct _model_asset_t
 	vector_t material_refs;
 	vector_t mesh_refs;
 } model_asset_t;
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_ASSET_MODEL_H

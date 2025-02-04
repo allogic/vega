@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
 #include <vega/core/std/vector.h>
 #include <vega/core/std/fvector64.h>
+
+VEGA_EXTERN_C_BEGIN
 
 typedef struct _fpage64_t
 {
@@ -46,5 +50,7 @@ void std_fdat64_set_dense_index(fdat64_t* dat, uint64_t id, uint64_t index);
 uint64_t std_fdat64_get_dense_index(fdat64_t* dat, uint64_t id);
 void std_fdat64_pages_resize(fdat64_t* dat, uint64_t page_count);
 void std_fdat64_sparse_resize(fdat64_t* dat, fpage64_t* page, uint64_t sparse_count);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_FDAT64_H

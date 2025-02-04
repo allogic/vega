@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _fvector32_t
 {
 	uint32_t* buffer;
@@ -38,5 +42,7 @@ void std_fvector32_free(fvector32_t* vector);
 ///////////////////////////////////////////////////////////////
 
 void std_fvector32_expand(fvector32_t* vector);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_FVECTOR32_H

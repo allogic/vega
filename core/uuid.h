@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _uuid_t
 {
 	uint32_t time_low;
@@ -19,5 +23,7 @@ typedef struct _uuid_t
 
 uuid_t uuid_generate(void);
 void uuid_print(uuid_t* uuid);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_UUID_H

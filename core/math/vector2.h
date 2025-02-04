@@ -11,8 +11,12 @@
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
+
+VEGA_EXTERN_C_BEGIN
 
 ///////////////////////////////////////////////////////////////
 // Inline Definition
@@ -38,12 +42,22 @@ __forceinline vector2_t math_vector2_one(void)
 
 	return r;
 }
-__forceinline vector2_t math_vector2_from_xy(double x, double y)
+__forceinline vector2_t math_vector2_xy(double x, double y)
 {
 	vector2_t r =
 	{
 		.x = x,
 		.y = y,
+	};
+
+	return r;
+}
+__forceinline vector2_t math_vector2_invert(vector2_t a)
+{
+	vector2_t r =
+	{
+		.x = -a.x,
+		.y = -a.y,
 	};
 
 	return r;
@@ -397,5 +411,7 @@ __forceinline void math_vector2_print(vector2_t a)
 {
 	printf("[%f, %f]\n", a.x, a.y);
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_VECTOR2_H

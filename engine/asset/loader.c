@@ -491,6 +491,7 @@ static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param)
 		aiProcess_GenSmoothNormals |
 		aiProcess_LimitBoneWeights |
 		aiProcess_Triangulate |
+		aiProcess_FlipWindingOrder |
 		aiProcess_FlipUVs |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_PopulateArmatureData;
@@ -587,9 +588,9 @@ static LRESULT WINAPI asset_loader_load_model_thread(PVOID user_param)
 
 	heap_free(model_asset_thread_args);
 
-#ifdef VEGA_VERBOSE_ASYNC
+#ifdef VEGA_ASSET_LOADER_VERBOSE_ASYNC
 	printf("Model loaded %s\n", std_string_buffer(&model_asset->file_path));
-#endif // VEGA_VERBOSE_ASYNC
+#endif // VEGA_ASSET_LOADER_VERBOSE_ASYNC
 
 	ReleaseMutex(s_asset_loader_mutex);
 
@@ -699,9 +700,9 @@ static LRESULT WINAPI asset_loader_load_texture_thread(PVOID user_param)
 
 	heap_free(texture_asset_thread_args);
 
-#ifdef VEGA_VERBOSE_ASYNC
+#ifdef VEGA_ASSET_LOADER_VERBOSE_ASYNC
 	printf("Texture loaded %s\n", std_string_buffer(&texture_asset->file_path));
-#endif // VEGA_VERBOSE_ASYNC
+#endif // VEGA_ASSET_LOADER_VERBOSE_ASYNC
 
 	ReleaseMutex(s_asset_loader_mutex);
 
@@ -827,9 +828,9 @@ static LRESULT WINAPI asset_loader_load_material_thread(PVOID user_param)
 
 	heap_free(material_asset_thread_args);
 
-#ifdef VEGA_VERBOSE_ASYNC
+#ifdef VEGA_ASSET_LOADER_VERBOSE_ASYNC
 	printf("Material loaded %s\n", std_string_buffer(&material_asset->file_path));
-#endif // VEGA_VERBOSE_ASYNC
+#endif // VEGA_ASSET_LOADER_VERBOSE_ASYNC
 
 	ReleaseMutex(s_asset_loader_mutex);
 
@@ -944,9 +945,9 @@ static LRESULT WINAPI asset_loader_load_mesh_thread(PVOID user_param)
 
 	heap_free(mesh_asset_thread_args);
 
-#ifdef VEGA_VERBOSE_ASYNC
+#ifdef VEGA_ASSET_LOADER_VERBOSE_ASYNC
 	printf("Mesh loaded %s\n", std_string_buffer(&mesh_asset->file_path));
-#endif // VEGA_VERBOSE_ASYNC
+#endif // VEGA_ASSET_LOADER_VERBOSE_ASYNC
 
 	ReleaseMutex(s_asset_loader_mutex);
 

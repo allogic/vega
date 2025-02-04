@@ -11,8 +11,12 @@
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
+
+VEGA_EXTERN_C_BEGIN
 
 ///////////////////////////////////////////////////////////////
 // Inline Definition
@@ -42,7 +46,7 @@ __forceinline vector4_t math_vector4_one(void)
 
 	return r;
 }
-__forceinline vector4_t math_vector4_from_xyzw(double x, double y, double z, double w)
+__forceinline vector4_t math_vector4_xyzw(double x, double y, double z, double w)
 {
 	vector4_t r =
 	{
@@ -50,6 +54,18 @@ __forceinline vector4_t math_vector4_from_xyzw(double x, double y, double z, dou
 		.y = y,
 		.z = z,
 		.w = w,
+	};
+
+	return r;
+}
+__forceinline vector4_t math_vector4_invert(vector4_t a)
+{
+	vector4_t r =
+	{
+		.x = -a.x,
+		.y = -a.y,
+		.z = -a.z,
+		.w = -a.w,
 	};
 
 	return r;
@@ -477,5 +493,7 @@ __forceinline void math_vector4_print(vector4_t a)
 {
 	printf("[%f, %f, %f, %f]\n", a.x, a.y, a.z, a.w);
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_VECTOR4_H

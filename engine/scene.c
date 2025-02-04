@@ -23,7 +23,7 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
-static void scene_update_controller_proc(ecs_t* ecs, uint64_t entity);
+static void scene_update_controller_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
 
 vector_t g_scene_stack = { 0 };
 
@@ -109,9 +109,8 @@ uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_
 
 	uint64_t root_entity = std_ecs_create(&scene->ecs);
 
-	transform_t root_transform = transform_identity();
-
-	std_ecs_attach(&scene->ecs, root_entity, VEGA_COMPONENT_TYPE_TRANSFORM, &root_transform);
+	transform_t* root_transform = (transform_t*)std_ecs_attach(&scene->ecs, root_entity, VEGA_COMPONENT_TYPE_TRANSFORM, 0);
+	transform_identity(root_transform, 0);
 
 	model_asset_t* model_asset = (model_asset_t*)std_map_get(&g_asset_loader_models, asset_name, strlen(asset_name), 0);
 
@@ -126,14 +125,12 @@ uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_
 
 		uint64_t mesh_entity = std_ecs_create(&scene->ecs); // TODO: make parent-child relationship..
 
-		transform_t mesh_transform = transform_identity();
+		transform_t* mesh_transform = (transform_t*)std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_TRANSFORM, 0);
+		transform_identity(mesh_transform, root_transform);
 
-		renderable_t mesh_renderable = { 0 };
-		mesh_renderable.mesh_asset = mesh_asset;
-		mesh_renderable.material_asset = material_asset;
-
-		std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_TRANSFORM, &mesh_transform);
-		std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_RENDERABLE, &mesh_renderable);
+		renderable_t* mesh_renderable = (renderable_t*)std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_RENDERABLE, 0);
+		mesh_renderable->mesh_asset = mesh_asset;
+		mesh_renderable->material_asset = material_asset;
 
 		mesh_ref_index++;
 	}
@@ -152,12 +149,12 @@ void scene_create_entity_from_asset_recursive(scene_t* scene, model_asset_t* mod
 
 	TRACY_ZONE_END
 }
-static void scene_update_controller_proc(ecs_t* ecs, uint64_t entity)
+static void scene_update_controller_proc(ecs_t* ecs, uint64_t index, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 
-	transform_t* transform = (transform_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM);
-	scene_controller_t* scene_controller = (scene_controller_t*)std_ecs_value(ecs, entity, VEGA_COMPONENT_TYPE_SCENE_CONTROLLER);
+	transform_t* transform = (transform_t*)std_ecs_get(ecs, entity, VEGA_COMPONENT_TYPE_TRANSFORM);
+	scene_controller_t* scene_controller = (scene_controller_t*)std_ecs_get(ecs, entity, VEGA_COMPONENT_TYPE_SCENE_CONTROLLER);
 
 	scene_controller_handle_position(scene_controller, transform);
 	scene_controller_handle_rotation(scene_controller, transform);

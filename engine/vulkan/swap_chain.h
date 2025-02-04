@@ -9,8 +9,11 @@
 
 #include <vulkan/vulkan.h>
 
+VEGA_EXTERN_C_BEGIN
+
 extern VkFormat g_vulkan_swap_chain_depth_format;
 
+extern uint32_t g_vulkan_swap_chain_min_image_count;
 extern uint32_t g_vulkan_swap_chain_image_count;
 
 extern vector_t g_vulkan_swap_chain_image_views;
@@ -38,5 +41,7 @@ void vulkan_swap_chain_image_views_alloc(void);
 
 void vulkan_swap_chain_images_free(void);
 void vulkan_swap_chain_image_views_free(void);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_VULKAN_SWAP_CHAIN_H

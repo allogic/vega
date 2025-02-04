@@ -1,7 +1,8 @@
 #include <string.h>
 
 #include <vega/engine/vulkan/command_buffer.h>
-#include <vega/engine/vulkan/instance.h>
+#include <vega/engine/vulkan/command_pool.h>
+#include <vega/engine/vulkan/device.h>
 
 #ifndef TRACY_ZONE_BEGIN
 	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
@@ -20,10 +21,10 @@ VkCommandBuffer vulkan_command_buffer_begin(void)
 	VkCommandBufferAllocateInfo command_buffer_allocate_info = { 0 };
 	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	command_buffer_allocate_info.commandPool = g_vulkan_instance_command_pool;
+	command_buffer_allocate_info.commandPool = g_vulkan_command_pool;
 	command_buffer_allocate_info.commandBufferCount = 1;
 
-	vkAllocateCommandBuffers(g_vulkan_instance_device, &command_buffer_allocate_info, &command_buffer);
+	vkAllocateCommandBuffers(g_vulkan_device, &command_buffer_allocate_info, &command_buffer);
 
 	VkCommandBufferBeginInfo command_buffer_begin_info = { 0 };
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -47,10 +48,10 @@ void vulkan_command_buffer_end(VkCommandBuffer command_buffer)
 	submit_info.pCommandBuffers = &command_buffer;
 
 	// TODO: proper synchronization..
-	vkQueueSubmit(g_vulkan_instance_graphic_queue, 1, &submit_info, 0);
-	vkQueueWaitIdle(g_vulkan_instance_graphic_queue);
+	vkQueueSubmit(g_vulkan_device_graphic_queue, 1, &submit_info, 0);
+	vkQueueWaitIdle(g_vulkan_device_graphic_queue);
 
-	vkFreeCommandBuffers(g_vulkan_instance_device, g_vulkan_instance_command_pool, 1, &command_buffer);
+	vkFreeCommandBuffers(g_vulkan_device, g_vulkan_command_pool, 1, &command_buffer);
 
 	TRACY_ZONE_END
 }

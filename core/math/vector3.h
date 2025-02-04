@@ -11,8 +11,12 @@
 	#include <pmmintrin.h>
 #endif // VEGA_SIMD_SUPPORT
 
+#include <vega/core/macros.h>
+
 #include <vega/core/math/constants.h>
 #include <vega/core/math/forward.h>
+
+VEGA_EXTERN_C_BEGIN
 
 extern vector3_t const g_world_right;
 extern vector3_t const g_world_up;
@@ -48,13 +52,24 @@ __forceinline vector3_t math_vector3_one(void)
 
 	return r;
 }
-__forceinline vector3_t math_vector3_from_xyz(double x, double y, double z)
+__forceinline vector3_t math_vector3_xyz(double x, double y, double z)
 {
 	vector3_t r =
 	{
 		.x = x,
 		.y = y,
 		.z = z,
+	};
+
+	return r;
+}
+__forceinline vector3_t math_vector3_invert(vector3_t a)
+{
+	vector3_t r =
+	{
+		.x = -a.x,
+		.y = -a.y,
+		.z = -a.z,
 	};
 
 	return r;
@@ -513,5 +528,7 @@ __forceinline void math_vector3_print(vector3_t a)
 {
 	printf("[%f, %f, %f]\n", a.x, a.y, a.z);
 }
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_MATH_VECTOR3_H

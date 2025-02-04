@@ -54,16 +54,19 @@ void* std_map_get(map_t* map, void const* key, uint64_t key_size, uint64_t* valu
 	map_pair_t* curr = map->table[hash];
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			existing_value = curr->value;
-
-			if (value_size)
+			if (memcmp(curr->key, key, curr->key_size) == 0)
 			{
-				*value_size = curr->value_size;
-			}
+				existing_value = curr->value;
 
-			break;
+				if (value_size)
+				{
+					*value_size = curr->value_size;
+				}
+
+				break;
+			}
 		}
 
 		curr = curr->next;
@@ -91,11 +94,14 @@ void* std_map_insert(map_t* map, void const* key, uint64_t key_size, void const*
 	map_pair_t* curr = map->table[hash];
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			existing_value = curr->value;
+			if (memcmp(curr->key, key, curr->key_size) == 0)
+			{
+				existing_value = curr->value;
 
-			break;
+				break;
+			}
 		}
 
 		curr = curr->next;
@@ -146,26 +152,29 @@ uint8_t std_map_remove(map_t* map, void const* key, uint64_t key_size)
 	map_pair_t* prev = 0;
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			if (prev)
+			if (memcmp(curr->key, key, curr->key_size) == 0)
 			{
-				prev->next = curr->next;
+				if (prev)
+				{
+					prev->next = curr->next;
+				}
+				else
+				{
+					map->table[hash] = curr->next;
+				}
+
+				heap_free(curr->key);
+				heap_free(curr->value);
+				heap_free(curr);
+
+				map->pair_count--;
+
+				removed = 1;
+
+				break;
 			}
-			else
-			{
-				map->table[hash] = curr->next;
-			}
-
-			heap_free(curr->key);
-			heap_free(curr->value);
-			heap_free(curr);
-
-			map->pair_count--;
-
-			removed = 1;
-
-			break;
 		}
 
 		prev = curr;
@@ -187,11 +196,14 @@ uint8_t std_map_contains(map_t* map, void const* key, uint64_t key_size)
 	map_pair_t* curr = map->table[hash];
 	while (curr)
 	{
-		if (memcmp(curr->key, key, MIN(curr->key_size, key_size)) == 0)
+		if (curr->key_size == key_size)
 		{
-			contains = 1;
+			if (memcmp(curr->key, key, curr->key_size) == 0)
+			{
+				contains = 1;
 
-			break;
+				break;
+			}
 		}
 
 		curr = curr->next;

@@ -28,8 +28,8 @@ string_t std_string_alloc(void)
 	TRACY_ZONE_BEGIN
 
 	string_t string = { 0 };
-	string.buffer = (char*)heap_alloc(ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT));
-	string.buffer_capacity = ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT);
+	string.buffer = (char*)heap_alloc(VEGA_ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT));
+	string.buffer_capacity = VEGA_ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT);
 	string.buffer_size = 0;
 	string.buffer[0] = 0;
 
@@ -94,11 +94,11 @@ void std_string_resize(string_t* string, uint64_t size)
 
 	if (size)
 	{
-		buffer_capacity = ALIGN_UP_BY(size + 1, STRING_BUFFER_ALIGNMENT);
+		buffer_capacity = VEGA_ALIGN_UP_BY(size + 1, STRING_BUFFER_ALIGNMENT);
 	}
 	else
 	{
-		buffer_capacity = ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT);
+		buffer_capacity = VEGA_ALIGN_UP_BY(STRING_BUFFER_CAPACITY, STRING_BUFFER_ALIGNMENT);
 	}
 
 	string->buffer = (char*)heap_realloc(string->buffer, buffer_capacity);
@@ -203,7 +203,7 @@ void std_string_expand(string_t* string)
 {
 	TRACY_ZONE_BEGIN
 
-	uint64_t buffer_capacity = ALIGN_UP_BY(string->buffer_size + 1, STRING_BUFFER_ALIGNMENT);
+	uint64_t buffer_capacity = VEGA_ALIGN_UP_BY(string->buffer_size + 1, STRING_BUFFER_ALIGNMENT);
 
 	string->buffer = (char*)heap_realloc(string->buffer, buffer_capacity);
 	string->buffer_capacity = buffer_capacity;

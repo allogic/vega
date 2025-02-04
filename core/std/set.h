@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _set_entry_t
 {
 	struct _set_entry_t* next;
@@ -47,5 +51,7 @@ void std_set_free(set_t* set);
 void std_set_expand(set_t* set);
 uint64_t std_set_hash(set_t* set, void const* key, uint64_t key_size, uint64_t modulus);
 uint8_t std_set_load_factor(set_t* set);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_SET_H

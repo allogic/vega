@@ -28,8 +28,8 @@ fvector32_t std_fvector32_alloc(void)
 	TRACY_ZONE_BEGIN
 
 	fvector32_t vector = { 0 };
-	vector.buffer = (uint32_t*)heap_alloc(ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT) * sizeof(uint32_t));
-	vector.buffer_capacity = ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT);
+	vector.buffer = (uint32_t*)heap_alloc(VEGA_ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT) * sizeof(uint32_t));
+	vector.buffer_capacity = VEGA_ALIGN_UP_BY(FVECTOR32_BUFFER_CAPACITY, FVECTOR32_BUFFER_ALIGNMENT);
 	vector.buffer_count = 0;
 
 	TRACY_ZONE_END
@@ -77,7 +77,7 @@ void std_fvector32_resize(fvector32_t* vector, uint64_t count)
 
 	if (count)
 	{
-		buffer_capacity = ALIGN_UP_BY(count, FVECTOR32_BUFFER_ALIGNMENT) * 2;
+		buffer_capacity = VEGA_ALIGN_UP_BY(count, FVECTOR32_BUFFER_ALIGNMENT) * 2;
 	}
 	else
 	{
@@ -240,7 +240,7 @@ void std_fvector32_expand(fvector32_t* vector)
 {
 	TRACY_ZONE_BEGIN
 
-	vector->buffer_capacity = ALIGN_UP_BY(vector->buffer_count, FVECTOR32_BUFFER_ALIGNMENT) * 2;
+	vector->buffer_capacity = VEGA_ALIGN_UP_BY(vector->buffer_count, FVECTOR32_BUFFER_ALIGNMENT) * 2;
 	vector->buffer = (uint32_t*)heap_realloc(vector->buffer, vector->buffer_capacity * sizeof(uint32_t));
 
 	TRACY_ZONE_END

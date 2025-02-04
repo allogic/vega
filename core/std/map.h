@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _map_pair_t
 {
 	struct _map_pair_t* next;
@@ -51,5 +55,7 @@ void std_map_free(map_t* map);
 void std_map_expand(map_t* map);
 uint64_t std_map_hash(map_t* map, void const* key, uint64_t key_size, uint64_t modulus);
 uint8_t std_map_load_factor(map_t* map);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_MAP_H

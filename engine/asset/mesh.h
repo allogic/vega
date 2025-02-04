@@ -7,6 +7,8 @@
 
 #include <vega/engine/vulkan/buffer.h>
 
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _mesh_asset_t
 {
 	string_t name;
@@ -19,5 +21,7 @@ typedef struct _mesh_asset_t
 	buffer_t pbr_vertex_buffer;
 	buffer_t pbr_index_buffer;
 } mesh_asset_t;
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_ASSET_MESH_H

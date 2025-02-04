@@ -1,7 +1,8 @@
 #include <string.h>
 
-#include <vega/engine/vulkan/instance.h>
+#include <vega/engine/vulkan/device.h>
 #include <vega/engine/vulkan/pipeline.h>
+#include <vega/engine/vulkan/surface.h>
 
 #ifndef TRACY_ZONE_BEGIN
 	#define TRACY_ZONE_BEGIN TracyCZoneC(ctx, TRACY_COLOR_GREEN, 1U);
@@ -59,7 +60,7 @@ VkDescriptorPool vulkan_pipeline_descriptor_pool_alloc(uint32_t pool_count, VkDe
 	descriptor_pool_create_info.poolSizeCount = (uint32_t)std_vector_count(&descriptor_pool_sizes);
 	descriptor_pool_create_info.maxSets = pool_count;
 
-	vkCreateDescriptorPool(g_vulkan_instance_device, &descriptor_pool_create_info, 0, &descriptor_pool);
+	vkCreateDescriptorPool(g_vulkan_device, &descriptor_pool_create_info, 0, &descriptor_pool);
 
 	std_vector_free(&descriptor_pool_sizes);
 	std_fvector32_free(&descriptor_type_counts);
@@ -98,7 +99,7 @@ VkDescriptorSetLayout vulkan_pipeline_descriptor_set_layout_alloc(VkDescriptorSe
 	descriptor_set_layout_create_info.bindingCount = (uint32_t)descriptor_set_layout_binding_count;
 	descriptor_set_layout_create_info.pNext = &descriptor_set_layout_binding_flags_create_info;
 
-	vkCreateDescriptorSetLayout(g_vulkan_instance_device, &descriptor_set_layout_create_info, 0, &descriptor_set_layout);
+	vkCreateDescriptorSetLayout(g_vulkan_device, &descriptor_set_layout_create_info, 0, &descriptor_set_layout);
 
 	std_fvector32_free(&descriptor_binding_flags);
 
@@ -119,7 +120,7 @@ VkPipelineLayout vulkan_pipeline_layout_alloc(VkDescriptorSetLayout descriptor_s
 	pipeline_layout_create_info.pPushConstantRanges = push_constant_ranges;
 	pipeline_layout_create_info.pushConstantRangeCount = (uint32_t)push_constant_range_count;
 
-	vkCreatePipelineLayout(g_vulkan_instance_device, &pipeline_layout_create_info, 0, &pipeline_layout);
+	vkCreatePipelineLayout(g_vulkan_device, &pipeline_layout_create_info, 0, &pipeline_layout);
 
 	TRACY_ZONE_END
 
@@ -149,7 +150,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 		shader_module_create_info.codeSize = vertex_shader_size;
 		shader_module_create_info.pCode = (uint32_t const*)vertex_shader_bytes;
 
-		vkCreateShaderModule(g_vulkan_instance_device, &shader_module_create_info, 0, &vertex_module);
+		vkCreateShaderModule(g_vulkan_device, &shader_module_create_info, 0, &vertex_module);
 	}
 
 	{
@@ -158,7 +159,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 		shader_module_create_info.codeSize = fragment_shader_size;
 		shader_module_create_info.pCode = (uint32_t const*)fragment_shader_bytes;
 
-		vkCreateShaderModule(g_vulkan_instance_device, &shader_module_create_info, 0, &fragment_module);
+		vkCreateShaderModule(g_vulkan_device, &shader_module_create_info, 0, &fragment_module);
 	}
 
 	VkPipelineShaderStageCreateInfo vertex_shader_stage_create_info = { 0 };
@@ -190,16 +191,16 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	VkViewport viewport = { 0 };
 	viewport.x = 0.0F;
 	viewport.y = 0.0F;
-	viewport.width = (float)g_vulkan_instance_surface_capabilities.currentExtent.width;
-	viewport.height = (float)g_vulkan_instance_surface_capabilities.currentExtent.height;
-	viewport.minDepth = 0.0F;
-	viewport.maxDepth = 1.0F;
+	viewport.width = (float)g_vulkan_surface_width;
+	viewport.height = (float)g_vulkan_surface_height;
+	viewport.minDepth = 1.0F;
+	viewport.maxDepth = 0.0F;
 
 	VkRect2D scissor = { 0 };
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = g_vulkan_instance_surface_capabilities.currentExtent.width;
-	scissor.extent.height = g_vulkan_instance_surface_capabilities.currentExtent.height;
+	scissor.extent.width = g_vulkan_surface_width;
+	scissor.extent.height = g_vulkan_surface_height;
 
 	VkPipelineViewportStateCreateInfo viewport_state_create_info = { 0 };
 	viewport_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -242,7 +243,7 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info = { 0 };
 	depth_stencil_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depth_stencil_state_create_info.depthTestEnable = 0; // TODO: why is this not working..
+	depth_stencil_state_create_info.depthTestEnable = 1;
 	depth_stencil_state_create_info.depthWriteEnable = 1;
 	depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
 	depth_stencil_state_create_info.depthBoundsTestEnable = 0;
@@ -264,12 +265,12 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	VkPipelineDynamicStateCreateInfo dynamic_state_create_info = { 0 };
 	dynamic_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamic_state_create_info.pDynamicStates = dynamic_states;
-	dynamic_state_create_info.dynamicStateCount = (uint32_t)ARRAY_COUNT(dynamic_states);
+	dynamic_state_create_info.dynamicStateCount = (uint32_t)VEGA_ARRAY_COUNT(dynamic_states);
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info = { 0 };
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipeline_create_info.pStages = shader_stages;
-	pipeline_create_info.stageCount = (uint32_t)ARRAY_COUNT(shader_stages);
+	pipeline_create_info.stageCount = (uint32_t)VEGA_ARRAY_COUNT(shader_stages);
 	pipeline_create_info.pVertexInputState = &vertex_input_create_info;
 	pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
 	pipeline_create_info.pViewportState = &viewport_state_create_info;
@@ -283,10 +284,10 @@ VkPipeline vulkan_pipeline_graphic_alloc(VkPipelineLayout pipeline_layout, VkRen
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = 0;
 
-	vkCreateGraphicsPipelines(g_vulkan_instance_device, 0, 1, &pipeline_create_info, 0, &pipeline);
+	vkCreateGraphicsPipelines(g_vulkan_device, 0, 1, &pipeline_create_info, 0, &pipeline);
 
-	vkDestroyShaderModule(g_vulkan_instance_device, vertex_module, 0);
-	vkDestroyShaderModule(g_vulkan_instance_device, fragment_module, 0);
+	vkDestroyShaderModule(g_vulkan_device, vertex_module, 0);
+	vkDestroyShaderModule(g_vulkan_device, fragment_module, 0);
 
 	heap_free(vertex_shader_bytes);
 	heap_free(fragment_shader_bytes);
@@ -314,7 +315,7 @@ VkPipeline vulkan_pipeline_pipeline_alloc(VkPipelineLayout pipeline_layout, char
 	shader_module_create_info.codeSize = compute_shader_size;
 	shader_module_create_info.pCode = (uint32_t const*)compute_shader_bytes;
 
-	vkCreateShaderModule(g_vulkan_instance_device, &shader_module_create_info, 0, &compute_module);
+	vkCreateShaderModule(g_vulkan_device, &shader_module_create_info, 0, &compute_module);
 
 	VkPipelineShaderStageCreateInfo compute_shader_stage_create_info = { 0 };
 	compute_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -327,9 +328,9 @@ VkPipeline vulkan_pipeline_pipeline_alloc(VkPipelineLayout pipeline_layout, char
 	pipeline_create_info.layout = pipeline_layout;
 	pipeline_create_info.stage = compute_shader_stage_create_info;
 
-	vkCreateComputePipelines(g_vulkan_instance_device, 0, 1, &pipeline_create_info, 0, &pipeline);
+	vkCreateComputePipelines(g_vulkan_device, 0, 1, &pipeline_create_info, 0, &pipeline);
 
-	vkDestroyShaderModule(g_vulkan_instance_device, compute_module, 0);
+	vkDestroyShaderModule(g_vulkan_device, compute_module, 0);
 
 	heap_free(compute_shader_bytes);
 
@@ -341,7 +342,7 @@ void vulkan_pipeline_descriptor_pool_free(VkDescriptorPool descriptor_pool)
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroyDescriptorPool(g_vulkan_instance_device, descriptor_pool, 0);
+	vkDestroyDescriptorPool(g_vulkan_device, descriptor_pool, 0);
 
 	TRACY_ZONE_END
 }
@@ -349,7 +350,7 @@ void vulkan_pipeline_descriptor_set_layout_free(VkDescriptorSetLayout descriptor
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroyDescriptorSetLayout(g_vulkan_instance_device, descriptor_set_layout, 0);
+	vkDestroyDescriptorSetLayout(g_vulkan_device, descriptor_set_layout, 0);
 
 	TRACY_ZONE_END
 }
@@ -357,7 +358,7 @@ void vulkan_pipeline_layout_free(VkPipelineLayout pipeline_layout)
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroyPipelineLayout(g_vulkan_instance_device, pipeline_layout, 0);
+	vkDestroyPipelineLayout(g_vulkan_device, pipeline_layout, 0);
 
 	TRACY_ZONE_END
 }
@@ -365,7 +366,7 @@ void vulkan_pipeline_free(VkPipeline pipeline)
 {
 	TRACY_ZONE_BEGIN
 
-	vkDestroyPipeline(g_vulkan_instance_device, pipeline, 0);
+	vkDestroyPipeline(g_vulkan_device, pipeline, 0);
 
 	TRACY_ZONE_END
 }

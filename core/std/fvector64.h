@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include <vega/core/macros.h>
+
+VEGA_EXTERN_C_BEGIN
+
 typedef struct _fvector64_t
 {
 	uint64_t* buffer;
@@ -38,5 +42,7 @@ void std_fvector64_free(fvector64_t* vector);
 ///////////////////////////////////////////////////////////////
 
 void std_fvector64_expand(fvector64_t* vector);
+
+VEGA_EXTERN_C_END
 
 #endif // VEGA_CORE_STD_FVECTOR64_H
