@@ -7,6 +7,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vega/engine/asset/material.h> // TODO: remove this..
+#include <vega/engine/asset/mesh.h> // TODO: remove this..
+
 VEGA_EXTERN_C_BEGIN
 
 typedef struct _time_info_t
@@ -26,15 +29,12 @@ typedef struct _camera_info_t
 	matrix4_t projection;
 } camera_info_t;
 
-typedef struct _entity_info_t
+typedef struct _geometry_pass_t
 {
-	matrix4_t model;
-} entity_info_t;
-
-typedef struct _index_info_t
-{
-	uint32_t entity_info_index;
-} index_info_t;
+	material_asset_t* material_asset;
+	mesh_asset_t* mesh_asset;
+	fvector64_t transforms;
+} geometry_pass_t;
 
 ///////////////////////////////////////////////////////////////
 // Public API
@@ -62,6 +62,7 @@ void vulkan_renderer_resize_after(void);
 
 void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count);
 void vulkan_renderer_update_pbr_descriptor_sets(void);
+void vulkan_renderer_build_geometry_queues(void);
 
 ///////////////////////////////////////////////////////////////
 // Internal API

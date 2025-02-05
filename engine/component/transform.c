@@ -27,7 +27,7 @@ void transform_init(transform_t* transform, transform_t* parent)
 	transform->world_position = math_vector3_zero();
 	transform->world_rotation = math_quaternion_identity();
 	transform->world_scale = math_vector3_one();
-	transform->children = std_fvector64_alloc();
+	transform->children = std_fvector64_alloc(); // TODO: free this..
 
 	if (parent)
 	{

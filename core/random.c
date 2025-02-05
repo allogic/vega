@@ -221,7 +221,7 @@ float random_real32_between(float min, float max)
 
 	float value = min + (max - min) * ((float)rand() / (float)RAND_MAX);
 
-	TRACY_ZONE_BEGIN
+	TRACY_ZONE_END
 
 	return value;
 }
@@ -231,7 +231,7 @@ double random_real64_between(double min, double max)
 
 	double value = min + (max - min) * ((double)rand() / (double)RAND_MAX);
 
-	TRACY_ZONE_BEGIN
+	TRACY_ZONE_END
 
 	return value;
 }
