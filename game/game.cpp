@@ -55,7 +55,8 @@ int main(int argc, char** argv, char** envp)
 			transform_t* transform = (transform_t*)std_ecs_get(&scene->ecs, cyberdemon_entity, VEGA_COMPONENT_TYPE_TRANSFORM);
 
 			transform_set_position_xyz(transform, sector_x, 0.0, sector_z);
-			//transform_set_euler_angles_pyr(transform, -90.0, 0.0, 0.0);
+			transform_set_euler_angles_pyr(transform, -90.0, 0.0, 0.0);
+			transform_set_relative_euler_angles_pyr(transform, 0.0, -90.0, 0.0);
 
 			sector_index++;
 		}
@@ -127,7 +128,7 @@ static void game_update_proc(ecs_t* ecs, uint64_t index, uint64_t entity)
 
 	yaw += 0.1 * g_platform_window_delta_time;
 
-	transform_set_euler_angles_pyr(transform, 0.0, yaw, 0.0);
+	//transform_set_euler_angles_pyr(transform, 0.0, yaw, 0.0);
 
 	TRACY_ZONE_END
 }

@@ -31,6 +31,10 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
+#ifndef VEGA_FRAMES_IN_FLIGHT
+	#define VEGA_FRAMES_IN_FLIGHT (2ULL)
+#endif // VEGA_FRAMES_IN_FLIGHT
+
 #ifndef VEGA_PBR_VERTEX_BINDING_ID
 	#define VEGA_PBR_VERTEX_BINDING_ID (0U)
 #endif // VEGA_PBR_VERTEX_BINDING_ID
@@ -44,20 +48,21 @@ static buffer_t s_vulkan_renderer_screen_info_buffer = {};
 static buffer_t s_vulkan_renderer_camera_info_buffer = {};
 static buffer_t s_vulkan_renderer_entity_info_buffer = {};
 
-static VkSemaphore s_vulkan_renderer_compute_complete_semaphore = 0;
-static VkSemaphore s_vulkan_renderer_graphic_complete_semaphore = 0;
-static VkSemaphore s_vulkan_renderer_image_available_semaphore = 0;
+static VkCommandBuffer s_vulkan_renderer_compute_command_buffers[VEGA_FRAMES_IN_FLIGHT] = {};
+static VkCommandBuffer s_vulkan_renderer_geometry_command_buffers[VEGA_FRAMES_IN_FLIGHT] = {};
+
+static VkSemaphore s_vulkan_renderer_compute_complete_semaphores[VEGA_FRAMES_IN_FLIGHT] = {};
+static VkSemaphore s_vulkan_renderer_graphic_complete_semaphores[VEGA_FRAMES_IN_FLIGHT] = {};
+static VkSemaphore s_vulkan_renderer_image_available_semaphores[VEGA_FRAMES_IN_FLIGHT] = {};
+
+static VkFence s_vulkan_renderer_render_fences[VEGA_FRAMES_IN_FLIGHT] = {};
 
 static VkRenderPass s_vulkan_renderer_render_pass = 0;
-
-static VkCommandBuffer s_vulkan_renderer_compute_command_buffer = 0;
-static VkCommandBuffer s_vulkan_renderer_geometry_command_buffer = 0;
-
-static VkFence s_vulkan_renderer_render_fence = 0;
 
 static vector_t s_vulkan_renderer_frame_buffers = {};
 
 static uint32_t s_vulkan_renderer_frame_index = 0;
+static uint32_t s_vulkan_renderer_image_index = 0;
 
 static VkDescriptorSetLayoutBinding s_vulkan_renderer_pbr_descriptor_set_layout_bindings[] =
 {
@@ -128,7 +133,7 @@ void vulkan_renderer_alloc(void)
 	s_vulkan_renderer_time_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(time_info_t));
 	s_vulkan_renderer_screen_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(screen_info_t));
 	s_vulkan_renderer_camera_info_buffer = vulkan_buffer_uniform_coherent_alloc(sizeof(camera_info_t));
-	s_vulkan_renderer_entity_info_buffer = vulkan_buffer_storage_coherent_alloc(sizeof(entity_info_t) * 1000);
+	s_vulkan_renderer_entity_info_buffer = vulkan_buffer_storage_coherent_alloc(sizeof(entity_info_t) * 10000);
 
 	vulkan_renderer_command_buffer_alloc();
 	vulkan_renderer_sync_objects_alloc();
@@ -137,12 +142,12 @@ void vulkan_renderer_alloc(void)
 	vulkan_renderer_imgui_context_alloc();
 
 	// TODO: adjust pool count somehow to entity count..
-	s_vulkan_renderer_pbr_descriptor_pool = vulkan_pipeline_descriptor_pool_alloc(1000, s_vulkan_renderer_pbr_descriptor_set_layout_bindings, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_descriptor_set_layout_bindings));
+	s_vulkan_renderer_pbr_descriptor_pool = vulkan_pipeline_descriptor_pool_alloc(10000, s_vulkan_renderer_pbr_descriptor_set_layout_bindings, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_descriptor_set_layout_bindings));
 	s_vulkan_renderer_pbr_descriptor_set_layout = vulkan_pipeline_descriptor_set_layout_alloc(s_vulkan_renderer_pbr_descriptor_set_layout_bindings, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_descriptor_set_layout_bindings));
 	s_vulkan_renderer_pbr_pipeline_layout = vulkan_pipeline_layout_alloc(s_vulkan_renderer_pbr_descriptor_set_layout, s_vulkan_renderer_pbr_push_constant_ranges, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_push_constant_ranges));
 	s_vulkan_renderer_pbr_pipeline = vulkan_pipeline_graphic_alloc(s_vulkan_renderer_pbr_pipeline_layout, s_vulkan_renderer_render_pass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, s_vulkan_renderer_pbr_vertex_shader_file_path, s_vulkan_renderer_pbr_fragment_shader_file_path, s_vulkan_renderer_pbr_vertex_input_binding_descriptions, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_binding_descriptions), s_vulkan_renderer_pbr_vertex_input_attribute_descriptions, VEGA_ARRAY_COUNT(s_vulkan_renderer_pbr_vertex_input_attribute_descriptions));
 
-	vulkan_renderer_build_pbr_descriptor_sets(1000); // TODO: put this somewhere else..
+	vulkan_renderer_build_pbr_descriptor_sets(10000); // TODO: put this somewhere else..
 
 	TRACY_ZONE_END
 }
@@ -175,9 +180,9 @@ void vulkan_renderer_begin(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkResetFences(g_vulkan_device, 1, &s_vulkan_renderer_render_fence);
+	vkResetFences(g_vulkan_device, 1, &s_vulkan_renderer_render_fences[s_vulkan_renderer_frame_index]);
 
-	vkAcquireNextImageKHR(g_vulkan_device, g_vulkan_swap_chain, UINT64_MAX, s_vulkan_renderer_image_available_semaphore, 0, &s_vulkan_renderer_frame_index);
+	vkAcquireNextImageKHR(g_vulkan_device, g_vulkan_swap_chain, UINT64_MAX, s_vulkan_renderer_image_available_semaphores[s_vulkan_renderer_frame_index], 0, &s_vulkan_renderer_image_index);
 
 	vulkan_renderer_update_uniform_buffers();
 
@@ -188,8 +193,8 @@ void vulkan_renderer_end(void)
 	TRACY_ZONE_BEGIN
 
 	{
-		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_compute_complete_semaphore };
-		VkCommandBuffer command_buffers[] = { s_vulkan_renderer_compute_command_buffer };
+		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_compute_complete_semaphores[s_vulkan_renderer_frame_index] };
+		VkCommandBuffer command_buffers[] = { s_vulkan_renderer_compute_command_buffers[s_vulkan_renderer_frame_index] };
 
 		VkSubmitInfo submit_info = {};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -205,10 +210,10 @@ void vulkan_renderer_end(void)
 	}
 
 	{
-		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_compute_complete_semaphore, s_vulkan_renderer_image_available_semaphore };
-		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
+		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_compute_complete_semaphores[s_vulkan_renderer_frame_index], s_vulkan_renderer_image_available_semaphores[s_vulkan_renderer_frame_index] };
+		VkSemaphore signal_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphores[s_vulkan_renderer_frame_index] };
 		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		VkCommandBuffer command_buffers[] = { s_vulkan_renderer_geometry_command_buffer };
+		VkCommandBuffer command_buffers[] = { s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index] };
 
 		VkSubmitInfo submit_info = {};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -220,13 +225,13 @@ void vulkan_renderer_end(void)
 		submit_info.pCommandBuffers = command_buffers;
 		submit_info.commandBufferCount = (uint32_t)VEGA_ARRAY_COUNT(command_buffers);
 
-		vkQueueSubmit(g_vulkan_device_graphic_queue, 1, &submit_info, s_vulkan_renderer_render_fence);
+		vkQueueSubmit(g_vulkan_device_graphic_queue, 1, &submit_info, s_vulkan_renderer_render_fences[s_vulkan_renderer_frame_index]);
 	}
 
-	vkWaitForFences(g_vulkan_device, 1, &s_vulkan_renderer_render_fence, 1, UINT64_MAX);
+	vkWaitForFences(g_vulkan_device, 1, &s_vulkan_renderer_render_fences[s_vulkan_renderer_frame_index], 1, UINT64_MAX);
 
 	{
-		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphore };
+		VkSemaphore wait_semaphores[] = { s_vulkan_renderer_graphic_complete_semaphores[s_vulkan_renderer_frame_index] };
 		VkSwapchainKHR swap_chains[] = { g_vulkan_swap_chain };
 
 		VkPresentInfoKHR present_info = {};
@@ -235,10 +240,12 @@ void vulkan_renderer_end(void)
 		present_info.waitSemaphoreCount = (uint32_t)VEGA_ARRAY_COUNT(wait_semaphores);
 		present_info.pSwapchains = swap_chains;
 		present_info.swapchainCount = (uint32_t)VEGA_ARRAY_COUNT(swap_chains);
-		present_info.pImageIndices = &s_vulkan_renderer_frame_index;
+		present_info.pImageIndices = &s_vulkan_renderer_image_index;
 
 		vkQueuePresentKHR(g_vulkan_device_present_queue, &present_info);
 	}
+
+	s_vulkan_renderer_frame_index = (s_vulkan_renderer_frame_index + 1) % VEGA_FRAMES_IN_FLIGHT;
 
 	TRACY_ZONE_END
 }
@@ -312,10 +319,10 @@ void vulkan_renderer_command_buffer_alloc(void)
 	command_buffer_alloc_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_alloc_create_info.commandPool = g_vulkan_command_pool;
 	command_buffer_alloc_create_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	command_buffer_alloc_create_info.commandBufferCount = 1;
+	command_buffer_alloc_create_info.commandBufferCount = VEGA_FRAMES_IN_FLIGHT;
 
-	vkAllocateCommandBuffers(g_vulkan_device, &command_buffer_alloc_create_info, &s_vulkan_renderer_compute_command_buffer);
-	vkAllocateCommandBuffers(g_vulkan_device, &command_buffer_alloc_create_info, &s_vulkan_renderer_geometry_command_buffer);
+	vkAllocateCommandBuffers(g_vulkan_device, &command_buffer_alloc_create_info, s_vulkan_renderer_compute_command_buffers);
+	vkAllocateCommandBuffers(g_vulkan_device, &command_buffer_alloc_create_info, s_vulkan_renderer_geometry_command_buffers);
 
 	TRACY_ZONE_END
 }
@@ -326,15 +333,27 @@ void vulkan_renderer_sync_objects_alloc(void)
 	VkSemaphoreCreateInfo semaphore_create_info = {};
 	semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_compute_complete_semaphore);
-	vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_graphic_complete_semaphore);
-	vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_image_available_semaphore);
+	uint64_t semaphore_index = 0;
+	while (semaphore_index < VEGA_FRAMES_IN_FLIGHT)
+	{
+		vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_compute_complete_semaphores[semaphore_index]);
+		vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_graphic_complete_semaphores[semaphore_index]);
+		vkCreateSemaphore(g_vulkan_device, &semaphore_create_info, 0, &s_vulkan_renderer_image_available_semaphores[semaphore_index]);
+
+		semaphore_index++;
+	}
 
 	VkFenceCreateInfo fence_create_info = {};
 	fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	vkCreateFence(g_vulkan_device, &fence_create_info, 0, &s_vulkan_renderer_render_fence);
+	uint64_t fence_index = 0;
+	while (fence_index < VEGA_FRAMES_IN_FLIGHT)
+	{
+		vkCreateFence(g_vulkan_device, &fence_create_info, 0, &s_vulkan_renderer_render_fences[fence_index]);
+
+		fence_index++;
+	}
 
 	TRACY_ZONE_END
 }
@@ -521,14 +540,12 @@ void vulkan_renderer_compute_begin(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkQueueWaitIdle(g_vulkan_device_compute_queue); // TODO
-
 	VkCommandBufferBeginInfo command_buffer_begin_info = {};
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	command_buffer_begin_info.flags = 0;
 	command_buffer_begin_info.pInheritanceInfo = 0;
 
-	vkBeginCommandBuffer(s_vulkan_renderer_compute_command_buffer, &command_buffer_begin_info);
+	vkBeginCommandBuffer(s_vulkan_renderer_compute_command_buffers[s_vulkan_renderer_frame_index], &command_buffer_begin_info);
 
 	TRACY_ZONE_END
 }
@@ -536,7 +553,7 @@ void vulkan_renderer_compute_end(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkEndCommandBuffer(s_vulkan_renderer_compute_command_buffer);
+	vkEndCommandBuffer(s_vulkan_renderer_compute_command_buffers[s_vulkan_renderer_frame_index]);
 
 	TRACY_ZONE_END
 }
@@ -544,14 +561,12 @@ void vulkan_renderer_graphic_begin(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkQueueWaitIdle(g_vulkan_device_graphic_queue); // TODO
-
 	VkCommandBufferBeginInfo command_buffer_begin_info = {};
 	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	command_buffer_begin_info.flags = 0;
 	command_buffer_begin_info.pInheritanceInfo = 0;
 
-	vkBeginCommandBuffer(s_vulkan_renderer_geometry_command_buffer, &command_buffer_begin_info);
+	vkBeginCommandBuffer(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], &command_buffer_begin_info);
 
 	TRACY_ZONE_END
 }
@@ -559,7 +574,7 @@ void vulkan_renderer_graphic_end(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkEndCommandBuffer(s_vulkan_renderer_geometry_command_buffer);
+	vkEndCommandBuffer(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index]);
 
 	TRACY_ZONE_END
 }
@@ -582,7 +597,7 @@ void vulkan_renderer_geometry_pass_begin(void)
 	VkRenderPassBeginInfo render_pass_create_info = {};
 	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_create_info.renderPass = s_vulkan_renderer_render_pass;
-	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_get(&s_vulkan_renderer_frame_buffers, s_vulkan_renderer_frame_index);
+	render_pass_create_info.framebuffer = *(VkFramebuffer*)std_vector_get(&s_vulkan_renderer_frame_buffers, s_vulkan_renderer_image_index);
 	render_pass_create_info.renderArea.offset.x = 0;
 	render_pass_create_info.renderArea.offset.y = 0;
 	render_pass_create_info.renderArea.extent.width = g_vulkan_surface_width;
@@ -590,7 +605,7 @@ void vulkan_renderer_geometry_pass_begin(void)
 	render_pass_create_info.pClearValues = clear_values;
 	render_pass_create_info.clearValueCount = (uint32_t)VEGA_ARRAY_COUNT(clear_values);
 
-	vkCmdBeginRenderPass(s_vulkan_renderer_geometry_command_buffer, &render_pass_create_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], &render_pass_create_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	VkViewport viewport = {};
 	viewport.x = 0.0F;
@@ -600,7 +615,7 @@ void vulkan_renderer_geometry_pass_begin(void)
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 
-	vkCmdSetViewport(s_vulkan_renderer_geometry_command_buffer, 0, 1, &viewport);
+	vkCmdSetViewport(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], 0, 1, &viewport);
 
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
@@ -608,9 +623,9 @@ void vulkan_renderer_geometry_pass_begin(void)
 	scissor.extent.width = g_vulkan_surface_width;
 	scissor.extent.height = g_vulkan_surface_height;
 
-	vkCmdSetScissor(s_vulkan_renderer_geometry_command_buffer, 0, 1, &scissor);
+	vkCmdSetScissor(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], 0, 1, &scissor);
 
-	vkCmdBindPipeline(s_vulkan_renderer_geometry_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline);
+	vkCmdBindPipeline(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline);
 
 	TRACY_ZONE_END
 }
@@ -647,7 +662,7 @@ void vulkan_renderer_imgui_pass(void)
 
 	ImDrawData* imgui_draw_data = ImGui::GetDrawData();
 
-	ImGui_ImplVulkan_RenderDrawData(imgui_draw_data, s_vulkan_renderer_geometry_command_buffer);
+	ImGui_ImplVulkan_RenderDrawData(imgui_draw_data, s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index]);
 
 	TRACY_ZONE_END
 }
@@ -655,7 +670,7 @@ void vulkan_renderer_geometry_pass_end(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkCmdEndRenderPass(s_vulkan_renderer_geometry_command_buffer);
+	vkCmdEndRenderPass(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index]);
 
 	TRACY_ZONE_END
 }
@@ -663,8 +678,8 @@ void vulkan_renderer_command_buffer_free(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkFreeCommandBuffers(g_vulkan_device, g_vulkan_command_pool, 1, &s_vulkan_renderer_compute_command_buffer);
-	vkFreeCommandBuffers(g_vulkan_device, g_vulkan_command_pool, 1, &s_vulkan_renderer_geometry_command_buffer);
+	vkFreeCommandBuffers(g_vulkan_device, g_vulkan_command_pool, VEGA_FRAMES_IN_FLIGHT, s_vulkan_renderer_compute_command_buffers);
+	vkFreeCommandBuffers(g_vulkan_device, g_vulkan_command_pool, VEGA_FRAMES_IN_FLIGHT, s_vulkan_renderer_geometry_command_buffers);
 
 	TRACY_ZONE_END
 }
@@ -672,15 +687,27 @@ void vulkan_renderer_sync_objects_free(void)
 {
 	TRACY_ZONE_BEGIN
 
-	vkQueueWaitIdle(g_vulkan_device_compute_queue); // TODO
-	vkQueueWaitIdle(g_vulkan_device_graphic_queue); // TODO
-	vkQueueWaitIdle(g_vulkan_device_present_queue); // TODO
+	vkQueueWaitIdle(g_vulkan_device_compute_queue);
+	vkQueueWaitIdle(g_vulkan_device_graphic_queue);
+	vkQueueWaitIdle(g_vulkan_device_present_queue);
 
-	vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_compute_complete_semaphore, 0);
-	vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_graphic_complete_semaphore, 0);
-	vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_image_available_semaphore, 0);
+	uint64_t semaphore_index = 0;
+	while (semaphore_index < VEGA_FRAMES_IN_FLIGHT)
+	{
+		vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_compute_complete_semaphores[semaphore_index], 0);
+		vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_graphic_complete_semaphores[semaphore_index], 0);
+		vkDestroySemaphore(g_vulkan_device, s_vulkan_renderer_image_available_semaphores[semaphore_index], 0);
 
-	vkDestroyFence(g_vulkan_device, s_vulkan_renderer_render_fence, 0);
+		semaphore_index++;
+	}
+
+	uint64_t fence_index = 0;
+	while (fence_index < VEGA_FRAMES_IN_FLIGHT)
+	{
+		vkDestroyFence(g_vulkan_device, s_vulkan_renderer_render_fences[fence_index], 0);
+
+		fence_index++;
+	}
 
 	TRACY_ZONE_END
 }
@@ -896,19 +923,19 @@ static void vulkan_renderer_submit_geometry_proc(ecs_t* ecs, uint64_t index, uin
 	VkBuffer default_vertex_buffers[] = { vertex_buffer->buffer };
 	uint64_t default_offsets[] = { 0 };
 
-	vkCmdBindDescriptorSets(s_vulkan_renderer_geometry_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline_layout, 0, 1, &descriptor_set, 0, 0);
-	vkCmdBindVertexBuffers(s_vulkan_renderer_geometry_command_buffer, VEGA_PBR_VERTEX_BINDING_ID, 1, default_vertex_buffers, default_offsets);
-	vkCmdBindIndexBuffer(s_vulkan_renderer_geometry_command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindDescriptorSets(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], VK_PIPELINE_BIND_POINT_GRAPHICS, s_vulkan_renderer_pbr_pipeline_layout, 0, 1, &descriptor_set, 0, 0);
+	vkCmdBindVertexBuffers(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], VEGA_PBR_VERTEX_BINDING_ID, 1, default_vertex_buffers, default_offsets);
+	vkCmdBindIndexBuffer(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	index_info_t index_info = {};
 	index_info.entity_info_index = (uint32_t)index;
 
-	vkCmdPushConstants(s_vulkan_renderer_geometry_command_buffer, s_vulkan_renderer_pbr_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(index_info_t), &index_info);
+	vkCmdPushConstants(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], s_vulkan_renderer_pbr_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(index_info_t), &index_info);
 
 	uint32_t index_count = (uint32_t)(index_buffer->size / sizeof(uint32_t));
 	uint32_t instance_count = 1;
 
-	vkCmdDrawIndexed(s_vulkan_renderer_geometry_command_buffer, index_count, instance_count, 0, 0, 0);
+	vkCmdDrawIndexed(s_vulkan_renderer_geometry_command_buffers[s_vulkan_renderer_frame_index], index_count, instance_count, 0, 0, 0);
 
 	TRACY_ZONE_END
 }
