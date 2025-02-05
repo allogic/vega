@@ -19,10 +19,10 @@ void scene_controller_init(scene_controller_t* scene_controller)
 	scene_controller->mouse_begin = math_vector3_zero();
 	scene_controller->mouse_end = math_vector3_zero();
 	scene_controller->mouse_delta = math_vector3_zero();
-	scene_controller->keyboard_move_speed_fast = 20.0;
-	scene_controller->keyboard_move_speed_normal = 5.0;
-	scene_controller->mouse_move_speed_fast = 5.0;
-	scene_controller->mouse_move_speed_normal = 0.005;
+	scene_controller->keyboard_move_speed_fast = 2000.0;
+	scene_controller->keyboard_move_speed_normal = 500.0;
+	scene_controller->mouse_move_speed_fast = 20.0;
+	scene_controller->mouse_move_speed_normal = 5.0;
 	scene_controller->mouse_rotation_speed = 0.1;
 	scene_controller->move_drag = 2.5;
 	scene_controller->rotation_drag = 50.0;
@@ -41,7 +41,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t right_direction = math_vector3_mul_scalar(transform->local_right, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, right_direction);
+		right_direction = math_vector3_mul_scalar(right_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, right_direction);
 	}
@@ -50,7 +50,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t left_direction = math_vector3_mul_scalar(transform->local_left, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, left_direction);
+		left_direction = math_vector3_mul_scalar(left_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, left_direction);
 	}
@@ -58,7 +58,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t down_direction = math_vector3_mul_scalar(transform->local_down, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, down_direction);
+		down_direction = math_vector3_mul_scalar(down_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, down_direction);
 	}
@@ -66,7 +66,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t up_direction = math_vector3_mul_scalar(transform->local_up, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, up_direction);
+		up_direction = math_vector3_mul_scalar(up_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, up_direction);
 	}
@@ -74,7 +74,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t front_direction = math_vector3_mul_scalar(transform->local_front, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, front_direction);
+		front_direction = math_vector3_mul_scalar(front_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, front_direction);
 	}
@@ -82,7 +82,7 @@ void scene_controller_handle_position(scene_controller_t* scene_controller, tran
 	{
 		vector3_t back_direction = math_vector3_mul_scalar(transform->local_back, keyboard_move_speed);
 
-		scene_controller->velocity = math_vector3_add(scene_controller->velocity, back_direction);
+		back_direction = math_vector3_mul_scalar(back_direction, g_platform_window_delta_time);
 
 		transform_set_relative_position(transform, back_direction);
 	}
@@ -123,31 +123,27 @@ void scene_controller_handle_rotation(scene_controller_t* scene_controller, tran
 		scene_controller->mouse_end = math_vector3_xyz(g_platform_window_mouse_position_x, g_platform_window_mouse_position_y, 0.0);
 		scene_controller->mouse_delta = math_vector3_sub(scene_controller->mouse_begin, scene_controller->mouse_end);
 
-		vector3_t mouse_delta_scaled = math_vector3_mul_scalar(scene_controller->mouse_delta, mouse_move_speed);
-		vector3_t change_in_y = math_vector3_mul(g_world_up, mouse_delta_scaled);
-		vector3_t change_in_x = math_vector3_mul(transform->local_right, mouse_delta_scaled);
-		vector3_t mouse_offset = math_vector3_zero();
+		double x_delta = scene_controller->mouse_delta.x * mouse_move_speed * g_platform_window_delta_time;
+		double y_delta = scene_controller->mouse_delta.y * mouse_move_speed * g_platform_window_delta_time;
 
-		mouse_offset = math_vector3_add(mouse_offset, change_in_x);
-		mouse_offset = math_vector3_add(mouse_offset, change_in_y);
+		vector3_t change_in_x = math_vector3_mul_scalar(transform->local_right, x_delta);
+		vector3_t change_in_y = math_vector3_mul_scalar(transform->local_up, y_delta);
 
-		vector3_t rotated_offset = math_vector3_rotate(mouse_offset, transform->local_rotation);
-		vector3_t rotated_offset_scaled = math_vector3_mul_scalar(rotated_offset, g_platform_window_delta_time);
-
-		transform_set_relative_position(transform, rotated_offset_scaled);
+		transform_set_relative_position(transform, change_in_x);
+		transform_set_relative_position(transform, change_in_y);
 	}
 	else if (platform_event_is_mouse_key_held(MOUSE_KEY_RIGHT))
 	{
 		scene_controller->mouse_end = math_vector3_xyz(g_platform_window_mouse_position_x, g_platform_window_mouse_position_y, 0.0);
 		scene_controller->mouse_delta = math_vector3_sub(scene_controller->mouse_begin, scene_controller->mouse_end);
 
-		double pitch_delta = scene_controller->mouse_delta.y * scene_controller->mouse_rotation_speed * g_platform_window_delta_time;
-		double yaw_delta = -scene_controller->mouse_delta.x * scene_controller->mouse_rotation_speed * g_platform_window_delta_time;
+		double p_delta = scene_controller->mouse_delta.y * scene_controller->mouse_rotation_speed * g_platform_window_delta_time;
+		double y_delta = -scene_controller->mouse_delta.x * scene_controller->mouse_rotation_speed * g_platform_window_delta_time;
 
 		quaternion_t local_rotation = transform_get_local_rotation(transform);
 
-		quaternion_t qx = math_quaternion_angle_axis(pitch_delta, g_world_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw_delta, g_world_up);
+		quaternion_t qx = math_quaternion_angle_axis(p_delta, g_world_right);
+		quaternion_t qy = math_quaternion_angle_axis(y_delta, g_world_up);
 
 		local_rotation = math_quaternion_mul(qy, local_rotation);
 		local_rotation = math_quaternion_mul(local_rotation, qx);
