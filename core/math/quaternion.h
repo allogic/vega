@@ -179,15 +179,15 @@ __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a)
 
 	double test = (a.w * a.x) - (a.y * a.z);
 
-	if (test > (0.5 - 1.0E-6))
+	if (test > (0.5 - VEGA_MATH_EPSILON_6))
 	{
-		pitch = MATH_PI_HALF;
+		pitch = VEGA_MATH_PI_HALF;
 		yaw = 2.0 * atan2(a.z, a.w);
 		roll = 0.0;
 	}
-	else if (test < -(0.5 - 1.0E-6))
+	else if (test < -(0.5 - VEGA_MATH_EPSILON_6))
 	{
-		pitch = -MATH_PI_HALF;
+		pitch = -VEGA_MATH_PI_HALF;
 		yaw = -2.0 * atan2(a.z, a.w);
 		roll = 0.0;
 	}
@@ -221,15 +221,15 @@ __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y,
 
 	double test = (w * x) - (y * z);
 
-	if (test > (0.5 - 1.0E-6))
+	if (test > (0.5 - VEGA_MATH_EPSILON_6))
 	{
-		pitch = MATH_PI_HALF;
+		pitch = VEGA_MATH_PI_HALF;
 		yaw = 2.0 * atan2(z, w);
 		roll = 0.0;
 	}
-	else if (test < -(0.5 - 1.0E-6))
+	else if (test < -(0.5 - VEGA_MATH_EPSILON_6))
 	{
-		pitch = -MATH_PI_HALF;
+		pitch = -VEGA_MATH_PI_HALF;
 		yaw = -2.0 * atan2(z, w);
 		roll = 0.0;
 	}

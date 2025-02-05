@@ -9,12 +9,8 @@
 #include <vega/core/math/quaternion.h>
 #include <vega/core/math/tests.h>
 
-#ifndef ASSERT_EPSILON
-	#define ASSERT_EPSILON (1.0E-15)
-#endif // ASSERT_EPSILON
-
 #ifndef ASSERT_VALUE
-	#define ASSERT_VALUE(EXPRESSION, EXPECTED) (assert(fabs((EXPRESSION) - (EXPECTED)) <= (ASSERT_EPSILON)))
+	#define ASSERT_VALUE(EXPRESSION, EXPECTED) (assert(fabs((EXPRESSION) - (EXPECTED)) <= (VEGA_MATH_EPSILON_15)))
 #endif // ASSERT_VALUE
 
 #ifdef VEGA_DEBUG

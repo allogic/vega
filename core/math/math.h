@@ -16,11 +16,11 @@ VEGA_EXTERN_C_BEGIN
 
 __forceinline double math_deg_to_rad(double a)
 {
-	return a * MATH_DEG_TO_RAD;
+	return a * VEGA_MATH_DEG_TO_RAD;
 }
 __forceinline double math_rad_to_deg(double a)
 {
-	return a * MATH_RAD_TO_DEG;
+	return a * VEGA_MATH_RAD_TO_DEG;
 }
 __forceinline double math_fast_inverse_sqrt(double a)
 {

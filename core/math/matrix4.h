@@ -118,7 +118,7 @@ __forceinline vector3_t math_matrix4_euler_angles(matrix4_t a)
 {
 	vector3_t r;
 
-	if (fabs(a.m02) < (1.0 - MATH_EPSILON_15))
+	if (fabs(a.m02) < (1.0 - VEGA_MATH_EPSILON_15))
 	{
 		r.x = atan2(-a.m12, a.m22);
 		r.y = asin(a.m02);
@@ -127,7 +127,7 @@ __forceinline vector3_t math_matrix4_euler_angles(matrix4_t a)
 	else
 	{
 		r.x = atan2(a.m10, a.m11);
-		r.y = (a.m02 > 0.0) ? MATH_PI_HALF : -MATH_PI_HALF;
+		r.y = (a.m02 > 0.0) ? VEGA_MATH_PI_HALF : -VEGA_MATH_PI_HALF;
 		r.z = 0.0;
 	}
 

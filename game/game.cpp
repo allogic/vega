@@ -45,7 +45,7 @@ int main(int argc, char** argv, char** envp)
 		while (sector_index < sector_count)
 		{
 			double sector_radius = 3000.0;
-			double sector_step = MATH_TAU / sector_count;
+			double sector_step = VEGA_MATH_TAU / sector_count;
 			double sector_angle = sector_step * sector_index;
 			double sector_x = cos(sector_angle) * sector_radius;
 			double sector_z = sin(sector_angle) * sector_radius;
