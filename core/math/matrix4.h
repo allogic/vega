@@ -127,7 +127,7 @@ __forceinline vector3_t math_matrix4_euler_angles(matrix4_t a)
 	else
 	{
 		r.x = atan2(a.m10, a.m11);
-		r.y = (a.m02 > 0.0) ? (MATH_PI / 2.0) : (-MATH_PI / 2.0);
+		r.y = (a.m02 > 0.0) ? MATH_PI_HALF : -MATH_PI_HALF;
 		r.z = 0.0;
 	}
 

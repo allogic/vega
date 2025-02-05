@@ -37,7 +37,7 @@
 
 static void vulkan_renderer_update_camera_info_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
 static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
-static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
+static void vulkan_renderer_submit_geometry_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
 
 static buffer_t s_vulkan_renderer_time_info_buffer = {};
 static buffer_t s_vulkan_renderer_screen_info_buffer = {};
@@ -102,8 +102,21 @@ static VkPipeline s_vulkan_renderer_pbr_pipeline = 0;
 
 // TODO: create entity filters for materials different then the pbr workflow..
 
-static ecs_query_t s_vulkan_renderer_camera_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_CAMERA };
-static ecs_query_t s_vulkan_renderer_render_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_RENDERABLE };
+static ecs_query_t s_vulkan_renderer_camera_query =
+{
+	.mask = VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_CAMERA,
+	.proc = vulkan_renderer_update_camera_info_proc,
+};
+static ecs_query_t s_vulkan_renderer_update_descriptor_sets_query =
+{
+	.mask = VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_RENDERABLE,
+	.proc = vulkan_renderer_update_pbr_descriptor_sets_proc,
+};
+static ecs_query_t s_vulkan_renderer_submit_geometry_query =
+{
+	.mask = VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_RENDERABLE,
+	.proc = vulkan_renderer_submit_geometry_proc,
+};
 
 void vulkan_renderer_alloc(void)
 {
@@ -238,16 +251,6 @@ void vulkan_renderer_resize_before(void)
 
 	TRACY_ZONE_END
 }
-void vulkan_renderer_resize(void)
-{
-	TRACY_ZONE_BEGIN
-
-	// TODO: remove this..
-	//ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-	//ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount);
-
-	TRACY_ZONE_END
-}
 void vulkan_renderer_resize_after(void)
 {
 	TRACY_ZONE_BEGIN
@@ -295,8 +298,8 @@ void vulkan_renderer_update_pbr_descriptor_sets(void)
 
 	if (scene)
 	{
-		std_ecs_query(&scene->ecs, &s_vulkan_renderer_render_query);
-		std_ecs_for(&scene->ecs, &s_vulkan_renderer_render_query, vulkan_renderer_update_pbr_descriptor_sets_proc);
+		std_ecs_query(&scene->ecs, &s_vulkan_renderer_update_descriptor_sets_query);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_update_descriptor_sets_query);
 	}
 
 	TRACY_ZONE_END
@@ -509,7 +512,7 @@ void vulkan_renderer_update_uniform_buffers(void)
 	if (scene)
 	{
 		std_ecs_query(&scene->ecs, &s_vulkan_renderer_camera_query);
-		std_ecs_for(&scene->ecs, &s_vulkan_renderer_camera_query, vulkan_renderer_update_camera_info_proc);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_camera_query);
 	}
 
 	TRACY_ZONE_END
@@ -619,8 +622,8 @@ void vulkan_renderer_geometry_pass(void)
 
 	if (scene)
 	{
-		std_ecs_query(&scene->ecs, &s_vulkan_renderer_render_query);
-		std_ecs_for(&scene->ecs, &s_vulkan_renderer_render_query, vulkan_renderer_pbr_render_proc);
+		std_ecs_query(&scene->ecs, &s_vulkan_renderer_submit_geometry_query);
+		std_ecs_for(&scene->ecs, &s_vulkan_renderer_submit_geometry_query);
 	}
 
 	TRACY_ZONE_END
@@ -727,7 +730,7 @@ static void vulkan_renderer_update_camera_info_proc(ecs_t* ecs, uint64_t index, 
 
 	vector3_t eye = transform->world_position;
 	vector3_t center = math_vector3_add(transform->world_position, transform->local_front);
-	vector3_t up = g_world_up;
+	vector3_t up = transform->local_up;
 
 	camera_info->view = math_matrix4_look_at(eye, center, up);
 
@@ -874,7 +877,7 @@ static void vulkan_renderer_update_pbr_descriptor_sets_proc(ecs_t* ecs, uint64_t
 
 	TRACY_ZONE_END
 }
-static void vulkan_renderer_pbr_render_proc(ecs_t* ecs, uint64_t index, uint64_t entity)
+static void vulkan_renderer_submit_geometry_proc(ecs_t* ecs, uint64_t index, uint64_t entity)
 {
 	TRACY_ZONE_BEGIN
 

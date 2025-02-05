@@ -10,7 +10,7 @@
 	#define TRACY_ZONE_END TracyCZoneEnd(ctx);
 #endif // TRACY_ZONE_END
 
-void transform_identity(transform_t* transform, transform_t* parent)
+void transform_init(transform_t* transform, transform_t* parent)
 {
 	TRACY_ZONE_BEGIN
 
@@ -86,7 +86,19 @@ void transform_set_rotation(transform_t* transform, quaternion_t rotation)
 {
 	TRACY_ZONE_BEGIN
 
-	// TODO
+	transform->local_rotation = rotation;
+	transform->local_rotation = math_quaternion_norm(transform->local_rotation);
+
+	transform->local_right = math_quaternion_right(transform->local_rotation);
+	transform->local_up = math_quaternion_up(transform->local_rotation);
+	transform->local_front = math_quaternion_front(transform->local_rotation);
+
+	transform->local_left = math_vector3_invert(transform->local_right);
+	transform->local_down = math_vector3_invert(transform->local_up);
+	transform->local_back = math_vector3_invert(transform->local_front);
+
+	transform_compute_world_rotation(transform);
+	transform_compute_world_position(transform);
 
 	TRACY_ZONE_END
 }
@@ -94,7 +106,19 @@ void transform_set_rotation_xyzw(transform_t* transform, double x, double y, dou
 {
 	TRACY_ZONE_BEGIN
 
-	// TODO
+	transform->local_rotation = math_quaternion_xyzw(x, y, z, w);
+	transform->local_rotation = math_quaternion_norm(transform->local_rotation);
+
+	transform->local_right = math_quaternion_right(transform->local_rotation);
+	transform->local_up = math_quaternion_up(transform->local_rotation);
+	transform->local_front = math_quaternion_front(transform->local_rotation);
+
+	transform->local_left = math_vector3_invert(transform->local_right);
+	transform->local_down = math_vector3_invert(transform->local_up);
+	transform->local_back = math_vector3_invert(transform->local_front);
+
+	transform_compute_world_rotation(transform);
+	transform_compute_world_position(transform);
 
 	TRACY_ZONE_END
 }
@@ -102,7 +126,19 @@ void transform_set_relative_rotation(transform_t* transform, quaternion_t rotati
 {
 	TRACY_ZONE_BEGIN
 
-	// TODO
+	transform->local_rotation = math_quaternion_mul(transform->local_rotation, rotation);
+	transform->local_rotation = math_quaternion_norm(transform->local_rotation);
+
+	transform->local_right = math_quaternion_right(transform->local_rotation);
+	transform->local_up = math_quaternion_up(transform->local_rotation);
+	transform->local_front = math_quaternion_front(transform->local_rotation);
+
+	transform->local_left = math_vector3_invert(transform->local_right);
+	transform->local_down = math_vector3_invert(transform->local_up);
+	transform->local_back = math_vector3_invert(transform->local_front);
+
+	transform_compute_world_rotation(transform);
+	transform_compute_world_position(transform);
 
 	TRACY_ZONE_END
 }
@@ -110,7 +146,19 @@ void transform_set_relative_rotation_xyzw(transform_t* transform, double x, doub
 {
 	TRACY_ZONE_BEGIN
 
-	// TODO
+	transform->local_rotation = math_quaternion_mul(transform->local_rotation, math_quaternion_xyzw(x, y, z, w));
+	transform->local_rotation = math_quaternion_norm(transform->local_rotation);
+
+	transform->local_right = math_quaternion_right(transform->local_rotation);
+	transform->local_up = math_quaternion_up(transform->local_rotation);
+	transform->local_front = math_quaternion_front(transform->local_rotation);
+
+	transform->local_left = math_vector3_invert(transform->local_right);
+	transform->local_down = math_vector3_invert(transform->local_up);
+	transform->local_back = math_vector3_invert(transform->local_front);
+
+	transform_compute_world_rotation(transform);
+	transform_compute_world_position(transform);
 
 	TRACY_ZONE_END
 }
@@ -118,28 +166,22 @@ void transform_set_euler_angles(transform_t* transform, vector3_t rotation)
 {
 	TRACY_ZONE_BEGIN
 
-	double pitch = math_deg_to_rad(rotation.x);
-	double yaw = math_deg_to_rad(rotation.y);
-	double roll = math_deg_to_rad(rotation.z);
+	double p = math_deg_to_rad(rotation.x);
+	double y = math_deg_to_rad(rotation.y);
+	double r = math_deg_to_rad(rotation.z);
 
 	if (transform->parent)
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, transform->parent->local_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, transform->parent->local_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, transform->parent->local_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, transform->parent->local_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, transform->parent->local_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, transform->parent->local_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
+		transform->local_rotation = math_quaternion_mul(qy, math_quaternion_mul(qx, qz));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxz);
-
-		vector3_t lr = math_vector3_rotate(transform->parent->local_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(transform->parent->local_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(transform->parent->local_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -147,22 +189,16 @@ void transform_set_euler_angles(transform_t* transform, vector3_t rotation)
 	}
 	else
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, g_world_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, g_world_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, g_world_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, g_world_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, g_world_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, g_world_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
+		transform->local_rotation = math_quaternion_mul(qy, math_quaternion_mul(qx, qz));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxz);
-
-		vector3_t lr = math_vector3_rotate(g_world_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(g_world_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(g_world_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -178,28 +214,22 @@ void transform_set_euler_angles_pyr(transform_t* transform, double p, double y, 
 {
 	TRACY_ZONE_BEGIN
 
-	double pitch = math_deg_to_rad(p);
-	double yaw = math_deg_to_rad(y);
-	double roll = math_deg_to_rad(r);
+	p = math_deg_to_rad(p);
+	y = math_deg_to_rad(y);
+	r = math_deg_to_rad(r);
 
 	if (transform->parent)
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, transform->parent->local_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, transform->parent->local_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, transform->parent->local_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, transform->parent->local_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, transform->parent->local_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, transform->parent->local_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
+		transform->local_rotation = math_quaternion_mul(qy, math_quaternion_mul(qx, qz));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxz);
-
-		vector3_t lr = math_vector3_rotate(transform->parent->local_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(transform->parent->local_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(transform->parent->local_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -207,22 +237,16 @@ void transform_set_euler_angles_pyr(transform_t* transform, double p, double y, 
 	}
 	else
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, g_world_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, g_world_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, g_world_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, g_world_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, g_world_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, g_world_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
+		transform->local_rotation = math_quaternion_mul(qy, math_quaternion_mul(qx, qz));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxz);
-
-		vector3_t lr = math_vector3_rotate(g_world_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(g_world_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(g_world_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -238,29 +262,22 @@ void transform_set_relative_euler_angles(transform_t* transform, vector3_t rotat
 {
 	TRACY_ZONE_BEGIN
 
-	double pitch = math_deg_to_rad(rotation.x);
-	double yaw = math_deg_to_rad(rotation.y);
-	double roll = math_deg_to_rad(rotation.z);
+	double p = math_deg_to_rad(rotation.x);
+	double y = math_deg_to_rad(rotation.y);
+	double r = math_deg_to_rad(rotation.z);
 
 	if (transform->parent)
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, transform->parent->local_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, transform->parent->local_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, transform->parent->local_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, transform->parent->local_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, transform->parent->local_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, transform->parent->local_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
-		quaternion_t qyxzr = math_quaternion_mul(transform->local_rotation, qyxz);
+		transform->local_rotation = math_quaternion_mul(transform->local_rotation, math_quaternion_mul(qy, math_quaternion_mul(qx, qz)));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxzr);
-
-		vector3_t lr = math_vector3_rotate(transform->parent->local_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(transform->parent->local_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(transform->parent->local_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -268,23 +285,16 @@ void transform_set_relative_euler_angles(transform_t* transform, vector3_t rotat
 	}
 	else
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, g_world_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, g_world_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, g_world_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, g_world_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, g_world_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, g_world_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
-		quaternion_t qyxzr = math_quaternion_mul(transform->local_rotation, qyxz);
+		transform->local_rotation = math_quaternion_mul(transform->local_rotation, math_quaternion_mul(qy, math_quaternion_mul(qx, qz)));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxzr);
-
-		vector3_t lr = math_vector3_rotate(g_world_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(g_world_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(g_world_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -300,29 +310,22 @@ void transform_set_relative_euler_angles_pyr(transform_t* transform, double p, d
 {
 	TRACY_ZONE_BEGIN
 
-	double pitch = math_deg_to_rad(p);
-	double yaw = math_deg_to_rad(y);
-	double roll = math_deg_to_rad(r);
+	p = math_deg_to_rad(p);
+	y = math_deg_to_rad(y);
+	r = math_deg_to_rad(r);
 
 	if (transform->parent)
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, transform->parent->local_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, transform->parent->local_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, transform->parent->local_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, transform->parent->local_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, transform->parent->local_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, transform->parent->local_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
-		quaternion_t qyxzr = math_quaternion_mul(transform->local_rotation, qyxz);
+		transform->local_rotation = math_quaternion_mul(transform->local_rotation, math_quaternion_mul(qy, math_quaternion_mul(qx, qz)));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxzr);
-
-		vector3_t lr = math_vector3_rotate(transform->parent->local_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(transform->parent->local_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(transform->parent->local_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -330,23 +333,16 @@ void transform_set_relative_euler_angles_pyr(transform_t* transform, double p, d
 	}
 	else
 	{
-		quaternion_t qx = math_quaternion_angle_axis(pitch, g_world_right);
-		quaternion_t qy = math_quaternion_angle_axis(yaw, g_world_up);
-		quaternion_t qz = math_quaternion_angle_axis(roll, g_world_front);
+		quaternion_t qx = math_quaternion_angle_axis(p, g_world_right);
+		quaternion_t qy = math_quaternion_angle_axis(y, g_world_up);
+		quaternion_t qz = math_quaternion_angle_axis(r, g_world_front);
 
-		quaternion_t qxz = math_quaternion_mul(qx, qz);
-		quaternion_t qyxz = math_quaternion_mul(qy, qxz);
-		quaternion_t qyxzr = math_quaternion_mul(transform->local_rotation, qyxz);
+		transform->local_rotation = math_quaternion_mul(transform->local_rotation, math_quaternion_mul(qy, math_quaternion_mul(qx, qz)));
+		transform->local_rotation = math_quaternion_norm(transform->local_rotation);
 
-		transform->local_rotation = math_quaternion_norm(qyxzr);
-
-		vector3_t lr = math_vector3_rotate(g_world_right, transform->local_rotation);
-		vector3_t lu = math_vector3_rotate(g_world_up, transform->local_rotation);
-		vector3_t lf = math_vector3_rotate(g_world_front, transform->local_rotation);
-
-		transform->local_right = math_vector3_norm(lr);
-		transform->local_up = math_vector3_norm(lu);
-		transform->local_front = math_vector3_norm(lf);
+		transform->local_right = math_quaternion_right(transform->local_rotation);
+		transform->local_up = math_quaternion_up(transform->local_rotation);
+		transform->local_front = math_quaternion_front(transform->local_rotation);
 
 		transform->local_left = math_vector3_invert(transform->local_right);
 		transform->local_down = math_vector3_invert(transform->local_up);
@@ -408,26 +404,24 @@ matrix4_t transform_matrix(transform_t* transform)
 {
 	TRACY_ZONE_BEGIN
 
-	double x2 = transform->world_rotation.x + transform->world_rotation.x;
-	double y2 = transform->world_rotation.y + transform->world_rotation.y;
-	double z2 = transform->world_rotation.z + transform->world_rotation.z;
+	double xx = transform->world_rotation.x * transform->world_rotation.x;
+	double yy = transform->world_rotation.y * transform->world_rotation.y;
+	double zz = transform->world_rotation.z * transform->world_rotation.z;
 
-	double xx = transform->world_rotation.x * x2;
-	double yy = transform->world_rotation.y * y2;
-	double zz = transform->world_rotation.z * z2;
-	double xy = transform->world_rotation.x * y2;
-	double xz = transform->world_rotation.x * z2;
-	double yz = transform->world_rotation.y * z2;
-	double wx = transform->world_rotation.w * x2;
-	double wy = transform->world_rotation.w * y2;
-	double wz = transform->world_rotation.w * z2;
+	double xy = transform->world_rotation.x * transform->world_rotation.y;
+	double xz = transform->world_rotation.x * transform->world_rotation.z;
+	double yz = transform->world_rotation.y * transform->world_rotation.z;
+
+	double wx = transform->world_rotation.w * transform->world_rotation.x;
+	double wy = transform->world_rotation.w * transform->world_rotation.y;
+	double wz = transform->world_rotation.w * transform->world_rotation.z;
 
 	matrix4_t r =
 	{
-		.m00 = (1.0 - (yy + zz)) * transform->world_scale.x, .m01 =        (xy - wz)  * transform->world_scale.x, .m02 =        (xz + wy)  * transform->world_scale.x, .m03 = 0.0,
-		.m10 =        (xy + wz)  * transform->world_scale.y, .m11 = (1.0 - (xx + zz)) * transform->world_scale.y, .m12 =        (yz - wx)  * transform->world_scale.y, .m13 = 0.0,
-		.m20 =        (xz - wy)  * transform->world_scale.z, .m21 =        (yz + wx)  * transform->world_scale.z, .m22 = (1.0 - (xx + yy)) * transform->world_scale.z, .m23 = 0.0,
-		.m30 =                  transform->world_position.x, .m31 =                  transform->world_position.y, .m32 =                  transform->world_position.z, .m33 = 1.0,
+		.m00 = (1.0 - 2.0 * (yy + zz)) * transform->world_scale.x, .m01 =        2.0 * (xy - wz)  * transform->world_scale.y, .m02 =        2.0 * (xz + wy)  * transform->world_scale.z, .m03 = 0.0,
+		.m10 =        2.0 * (xy + wz)  * transform->world_scale.x, .m11 = (1.0 - 2.0 * (xx + zz)) * transform->world_scale.y, .m12 =        2.0 * (yz - wx)  * transform->world_scale.z, .m13 = 0.0,
+		.m20 =        2.0 * (xz - wy)  * transform->world_scale.x, .m21 =        2.0 * (yz + wx)  * transform->world_scale.y, .m22 = (1.0 - 2.0 * (xx + yy)) * transform->world_scale.z, .m23 = 0.0,
+		.m30 =                        transform->world_position.x, .m31 =                        transform->world_position.y, .m32 =                        transform->world_position.z, .m33 = 1.0,
 	};
 
 	TRACY_ZONE_END

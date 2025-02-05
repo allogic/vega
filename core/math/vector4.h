@@ -444,7 +444,16 @@ __forceinline vector4_t math_vector4_div_scalar(vector4_t a, double b)
 }
 __forceinline vector4_t math_vector4_norm(vector4_t a)
 {
-	return math_vector4_mul_scalar(a, 1.0 / math_vector4_length(a));
+	double l = math_vector4_length(a);
+
+	if (l > 0.0)
+	{
+		return math_vector4_mul_scalar(a, 1.0 / l);
+	}
+	else
+	{
+		return math_vector4_zero();
+	}
 }
 __forceinline double math_vector4_dot(vector4_t a, vector4_t b)
 {

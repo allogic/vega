@@ -15,7 +15,11 @@
 
 static void game_update_proc(ecs_t* ecs, uint64_t index, uint64_t entity);
 
-static ecs_query_t s_game_update_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_RENDERABLE };
+static ecs_query_t s_game_update_query =
+{
+	.mask = VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_RENDERABLE,
+	.proc = game_update_proc,
+};
 
 int main(int argc, char** argv, char** envp)
 {
@@ -70,7 +74,7 @@ int main(int argc, char** argv, char** envp)
 			scene_update(scene);
 
 			std_ecs_query(&scene->ecs, &s_game_update_query);
-			std_ecs_for(&scene->ecs, &s_game_update_query, game_update_proc);
+			std_ecs_for(&scene->ecs, &s_game_update_query);
 		}
 
 		{
@@ -121,7 +125,7 @@ static void game_update_proc(ecs_t* ecs, uint64_t index, uint64_t entity)
 
 	static double yaw = 0.0;
 
-	yaw += 0.001;
+	yaw += 0.1 * g_platform_window_delta_time;
 
 	transform_set_euler_angles_pyr(transform, 0.0, yaw, 0.0);
 

@@ -113,6 +113,12 @@ __forceinline quaternion_t math_quaternion_xyzw(double x, double y, double z, do
 __forceinline quaternion_t math_quaternion_mul(quaternion_t a, quaternion_t b);
 __forceinline quaternion_t math_quaternion_mul_scalar(quaternion_t a, double b);
 __forceinline quaternion_t math_quaternion_conjugate(quaternion_t a);
+__forceinline vector3_t math_quaternion_right(quaternion_t a);
+__forceinline vector3_t math_quaternion_up(quaternion_t a);
+__forceinline vector3_t math_quaternion_front(quaternion_t a);
+__forceinline vector3_t math_quaternion_left(quaternion_t a);
+__forceinline vector3_t math_quaternion_down(quaternion_t a);
+__forceinline vector3_t math_quaternion_back(quaternion_t a);
 __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a);
 __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y, double z, double w);
 __forceinline quaternion_t math_quaternion_from_euler_angles(vector3_t a);

@@ -232,7 +232,7 @@ fvector64_t* std_ecs_entities(ecs_t* ecs)
 
 	return entities;
 }
-void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_proc_t for_proc)
+void std_ecs_for(ecs_t* ecs, ecs_query_t* query)
 {
 	TRACY_ZONE_BEGIN
 
@@ -242,7 +242,7 @@ void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_proc_t for_proc)
 	{
 		uint64_t entity = std_dat_id(query->pool, entity_index);
 
-		for_proc(ecs, entity_index, entity);
+		query->proc(ecs, entity_index, entity);
 
 		entity_index++;
 	}

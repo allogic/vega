@@ -36,9 +36,7 @@ __forceinline double math_fast_inverse_sqrt(double a)
 }
 __forceinline double math_clamp(double a, double min, double max)
 {
-	if (a > max) a = max;
-	else if (a < min) a = min;
-	return a;
+	return fmax(min, fmin(max, a));
 }
 
 VEGA_EXTERN_C_END

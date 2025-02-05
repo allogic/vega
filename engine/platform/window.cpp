@@ -95,7 +95,29 @@ void platform_window_poll_events(void)
 
 	g_platform_window_mouse_wheel_delta = 0;
 
-	platform_event_update_key_states();
+	for (uint8_t key_index = 0; key_index < 0xFF; key_index++)
+	{
+		if (g_platform_event_keyboard_key_states[key_index] == KEY_STATE_PRESSED)
+		{
+			g_platform_event_keyboard_key_states[key_index] = KEY_STATE_DOWN;
+		}
+		else if (g_platform_event_keyboard_key_states[key_index] == KEY_STATE_RELEASED)
+		{
+			g_platform_event_keyboard_key_states[key_index] = KEY_STATE_UP;
+		}
+	}
+
+	for (uint8_t key_index = 0; key_index < 0x3; key_index++)
+	{
+		if (g_platform_event_mouse_key_states[key_index] == KEY_STATE_PRESSED)
+		{
+			g_platform_event_mouse_key_states[key_index] = KEY_STATE_DOWN;
+		}
+		else if (g_platform_event_mouse_key_states[key_index] == KEY_STATE_RELEASED)
+		{
+			g_platform_event_mouse_key_states[key_index] = KEY_STATE_UP;
+		}
+	}
 
 	while (PeekMessageA(&s_platform_window_message, 0, 0, 0, PM_REMOVE))
 	{
@@ -111,7 +133,7 @@ void platform_window_end_frame(void)
 
 	timer_end(&s_platform_window_timer);
 
-	g_platform_window_delta_time = timer_ms(&s_platform_window_timer);
+	g_platform_window_delta_time = timer_ms(&s_platform_window_timer) / 1000.0;
 	g_platform_window_time += g_platform_window_delta_time;
 
 	TRACY_ZONE_END
@@ -148,7 +170,6 @@ void platform_window_resize(uint32_t width, uint32_t height)
 		vulkan_swap_chain_resize_before();
 
 		vulkan_surface_resize();
-		vulkan_renderer_resize();
 
 		vulkan_swap_chain_resize_after();
 		vulkan_renderer_resize_after();
@@ -177,10 +198,7 @@ void platform_window_resize(uint32_t width, uint32_t height)
 }
 static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
 {
-	if (ImGui_ImplWin32_WndProcHandler(window, message, w_param, l_param))
-	{
-		return 1;
-	}
+	ImGui_ImplWin32_WndProcHandler(window, message, w_param, l_param);
 
 	switch (message)
 	{
@@ -198,9 +216,12 @@ static LRESULT platform_window_message_proc(HWND window, UINT message, WPARAM w_
 			INT width = client_rect.right - client_rect.left;
 			INT height = client_rect.bottom - client_rect.top;
 
-			if ((width > 0) && (height > 0) && (g_vulkan_surface_width != width) && (g_vulkan_surface_height != height))
+			if ((width > 0) && (height > 0))
 			{
-				platform_window_resize(width, height);
+				if ((g_vulkan_surface_width != width) || (g_vulkan_surface_height != height))
+				{
+					platform_window_resize(width, height);
+				}
 			}
 
 			break;

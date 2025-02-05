@@ -100,6 +100,72 @@ __forceinline quaternion_t math_quaternion_conjugate(quaternion_t a)
 
 	return r;
 }
+__forceinline vector3_t math_quaternion_right(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x = 1.0 - 2.0 * ((a.y * a.y) + (a.z * a.z)),
+		.y =       2.0 * ((a.x * a.y) + (a.w * a.z)),
+		.z =       2.0 * ((a.x * a.z) - (a.w * a.y)),
+	};
+
+	return r;
+}
+__forceinline vector3_t math_quaternion_up(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x =       2.0 * ((a.x * a.y) - (a.w * a.z)),
+		.y = 1.0 - 2.0 * ((a.x * a.x) + (a.z * a.z)),
+		.z =       2.0 * ((a.y * a.z) + (a.w * a.x)),
+	};
+
+	return r;
+}
+__forceinline vector3_t math_quaternion_front(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x =       2.0 * ((a.x * a.z) + (a.w * a.y)),
+		.y =       2.0 * ((a.y * a.z) - (a.w * a.x)),
+		.z = 1.0 - 2.0 * ((a.x * a.x) + (a.y * a.y)),
+	};
+
+	return r;
+}
+__forceinline vector3_t math_quaternion_left(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x = -(1.0 - 2.0 * ((a.y * a.y) + (a.z * a.z))),
+		.y = -(      2.0 * ((a.x * a.y) + (a.w * a.z))),
+		.z = -(      2.0 * ((a.x * a.z) - (a.w * a.y))),
+	};
+
+	return r;
+}
+__forceinline vector3_t math_quaternion_down(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x = -(      2.0 * ((a.x * a.y) - (a.w * a.z))),
+		.y = -(1.0 - 2.0 * ((a.x * a.x) + (a.z * a.z))),
+		.z = -(      2.0 * ((a.y * a.z) + (a.w * a.x))),
+	};
+
+	return r;
+}
+__forceinline vector3_t math_quaternion_back(quaternion_t a)
+{
+	vector3_t r =
+	{
+		.x = -(      2.0 * ((a.x * a.z) + (a.w * a.y))),
+		.y = -(      2.0 * ((a.y * a.z) - (a.w * a.x))),
+		.z = -(1.0 - 2.0 * ((a.x * a.x) + (a.y * a.y))),
+	};
+
+	return r;
+}
 __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a)
 {
 #if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
@@ -107,25 +173,30 @@ __forceinline vector3_t math_quaternion_to_euler_angles(quaternion_t a)
 #elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
-	double srcp = 2.0 * ((a.w * a.x) + (a.y * a.z));
-	double crcp = 1.0 - 2.0 * (a.x * a.x + a.y * a.y);
-	double roll = atan2(srcp, crcp);
-
-	double sp = 2.0 * ((a.w * a.y) - (a.z * a.x));
 	double pitch = 0.0;
+	double yaw = 0.0;
+	double roll = 0.0;
 
-	if (fabs(sp) >= 1.0)
+	double test = (a.w * a.x) - (a.y * a.z);
+
+	if (test > (0.5 - 1.0E-6))
 	{
-		pitch = copysign(MATH_PI / 2.0, sp);
+		pitch = MATH_PI_HALF;
+		yaw = 2.0 * atan2(a.z, a.w);
+		roll = 0.0;
+	}
+	else if (test < -(0.5 - 1.0E-6))
+	{
+		pitch = -MATH_PI_HALF;
+		yaw = -2.0 * atan2(a.z, a.w);
+		roll = 0.0;
 	}
 	else
 	{
-		pitch = asin(sp);
+		pitch = asin(2.0 * test);
+		yaw = atan2(2.0 * ((a.w * a.y) - (a.x * a.z)), 1.0 - 2.0 * ((a.x * a.x) + (a.y * a.y)));
+		roll = atan2(2.0 * ((a.w * a.z) - (a.x * a.y)), 1.0 - 2.0 * ((a.y * a.y) + (a.z * a.z)));
 	}
-
-	double sycp = 2.0 * ((a.w * a.z) + (a.x * a.y));
-	double cycp = 1.0 - 2.0 * (a.y * a.y + a.z * a.z);
-	double yaw = atan2(sycp, cycp);
 
 	vector3_t r =
 	{
@@ -144,25 +215,30 @@ __forceinline vector3_t math_quaternion_to_euler_angles_xyzw(double x, double y,
 #elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
 	// TODO
 #else
-	double srcp = 2.0 * ((w * x) + (y * z));
-	double crcp = 1.0 - 2.0 * (x * x + y * y);
-	double roll = atan2(srcp, crcp);
-
-	double sp = 2.0 * ((w * y) - (z * x));
 	double pitch = 0.0;
+	double yaw = 0.0;
+	double roll = 0.0;
 
-	if (fabs(sp) >= 1.0)
+	double test = (w * x) - (y * z);
+
+	if (test > (0.5 - 1.0E-6))
 	{
-		pitch = copysign(MATH_PI / 2.0, sp);
+		pitch = MATH_PI_HALF;
+		yaw = 2.0 * atan2(z, w);
+		roll = 0.0;
+	}
+	else if (test < -(0.5 - 1.0E-6))
+	{
+		pitch = -MATH_PI_HALF;
+		yaw = -2.0 * atan2(z, w);
+		roll = 0.0;
 	}
 	else
 	{
-		pitch = asin(sp);
+		pitch = asin(2.0 * test);
+		yaw = atan2(2.0 * ((w * y) - (x * z)), 1.0 - 2.0 * ((x * x) + (y * y)));
+		roll = atan2(2.0 * ((w * z) - (x * y)), 1.0 - 2.0 * ((y * y) + (z * z)));
 	}
-
-	double sycp = 2.0 * ((w * z) + (x * y));
-	double cycp = 1.0 - 2.0 * (y * y + z * z);
-	double yaw = atan2(sycp, cycp);
 
 	vector3_t r =
 	{
@@ -276,30 +352,33 @@ __forceinline quaternion_t math_quaternion_from_euler_angles_xyz(double x, doubl
 }
 __forceinline quaternion_t math_quaternion_angle_axis(double a, vector3_t b)
 {
-#if defined(VEGA_AVX_SUPPORT) && defined(__AVX__) || defined(VEGA_AVX_FORCE)
-	// TODO
-#elif defined(VEGA_SSE_SUPPORT) && defined(__SSE__) || defined(VEGA_SSE_FORCE)
-	// TODO
-#else
 	vector3_t n = math_vector3_norm(b);
 
-	double a_two = a / 2.0;
-	double s = sin(a_two);
+	double a_half = a * 0.5;
+	double s = sin(a_half);
 
 	quaternion_t r =
 	{
 		.x = n.x * s,
 		.y = n.y * s,
 		.z = n.z * s,
-		.w = cos(a_two),
+		.w = cos(a_half),
 	};
 
 	return r;
-#endif // VEGA_SIMD_SUPPORT
 }
 __forceinline quaternion_t math_quaternion_norm(quaternion_t a)
 {
-	return math_quaternion_mul_scalar(a, 1.0 / math_quaternion_length(a));
+	double l = math_quaternion_length(a);
+
+	if (l > 0.0)
+	{
+		return math_quaternion_mul_scalar(a, 1.0 / l);
+	}
+	else
+	{
+		return math_quaternion_identity();
+	}
 }
 __forceinline double math_quaternion_dot(quaternion_t a, quaternion_t b)
 {

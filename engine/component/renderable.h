@@ -16,6 +16,13 @@ typedef struct _renderable_t
 	material_asset_t* material_asset;
 } renderable_t;
 
+///////////////////////////////////////////////////////////////
+// Public API
+///////////////////////////////////////////////////////////////
+
+void renderable_init(renderable_t* renderable);
+// TODO
+
 VEGA_EXTERN_C_END
 
 #endif // VEGA_INSTANCE_COMPONENT_RENDERABLE_H

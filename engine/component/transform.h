@@ -29,7 +29,7 @@ typedef struct _transform_t
 // Public API
 ///////////////////////////////////////////////////////////////
 
-void transform_identity(transform_t* transform, transform_t* parent);
+void transform_init(transform_t* transform, transform_t* parent);
 
 __forceinline vector3_t transform_get_world_position(transform_t* transform);
 __forceinline quaternion_t transform_get_world_rotation(transform_t* transform);

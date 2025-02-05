@@ -23,14 +23,15 @@ typedef struct _ecs_t
 	dat_t pools[64];
 } ecs_t;
 
+typedef void (*ecs_for_proc_t)(ecs_t* ecs, uint64_t index, uint64_t entity);
+
 typedef struct _ecs_query_t
 {
 	uint64_t mask;
+	ecs_for_proc_t proc;
 	uint64_t count;
 	dat_t* pool;
 } ecs_query_t;
-
-typedef void (*ecs_for_proc_t)(ecs_t* ecs, uint64_t index, uint64_t entity);
 
 ///////////////////////////////////////////////////////////////
 // Public API
@@ -49,7 +50,7 @@ void std_ecs_query(ecs_t* ecs, ecs_query_t* query);
 uint8_t std_ecs_contains(ecs_t* ecs, uint64_t entity);
 uint64_t std_ecs_count(ecs_t* ecs);
 fvector64_t* std_ecs_entities(ecs_t* ecs);
-void std_ecs_for(ecs_t* ecs, ecs_query_t* query, ecs_for_proc_t for_proc);
+void std_ecs_for(ecs_t* ecs, ecs_query_t* query);
 void std_ecs_clear(ecs_t* ecs);
 void std_ecs_free(ecs_t* ecs);
 

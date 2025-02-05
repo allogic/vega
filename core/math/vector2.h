@@ -368,7 +368,16 @@ __forceinline vector2_t math_vector2_div_scalar(vector2_t a, double b)
 }
 __forceinline vector2_t math_vector2_norm(vector2_t a)
 {
-	return math_vector2_mul_scalar(a, 1.0 / math_vector2_length(a));
+	double l = math_vector2_length(a);
+
+	if (l > 0.0)
+	{
+		return math_vector2_mul_scalar(a, 1.0 / l);
+	}
+	else
+	{
+		return math_vector2_zero();
+	}
 }
 __forceinline double math_vector2_dot(vector2_t a, vector2_t b)
 {

@@ -140,8 +140,6 @@ extern key_state_t g_platform_event_mouse_key_states[0x3];
 // Public API
 ///////////////////////////////////////////////////////////////
 
-void platform_event_update_key_states(void);
-
 uint8_t platform_event_is_keyboard_key_pressed(keyboard_key_t key);
 uint8_t platform_event_is_keyboard_key_held(keyboard_key_t key);
 uint8_t platform_event_is_keyboard_key_released(keyboard_key_t key);

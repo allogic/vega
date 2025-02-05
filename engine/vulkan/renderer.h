@@ -58,7 +58,6 @@ void vulkan_renderer_imgui_pass(void); // TODO: move this past post-processing p
 void vulkan_renderer_geometry_pass_end(void);
 
 void vulkan_renderer_resize_before(void);
-void vulkan_renderer_resize(void);
 void vulkan_renderer_resize_after(void);
 
 void vulkan_renderer_build_pbr_descriptor_sets(uint64_t descriptor_count);

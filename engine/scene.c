@@ -27,7 +27,11 @@ static void scene_update_controller_proc(ecs_t* ecs, uint64_t index, uint64_t en
 
 vector_t g_scene_stack = { 0 };
 
-static ecs_query_t s_scene_stack_controller_query = { VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_SCENE_CONTROLLER };
+static ecs_query_t s_scene_stack_controller_query =
+{
+	.mask = VEGA_COMPONENT_BIT_TRANSFORM | VEGA_COMPONENT_BIT_SCENE_CONTROLLER,
+	.proc = scene_update_controller_proc,
+};
 
 void scene_stack_alloc(void)
 {
@@ -84,7 +88,7 @@ void scene_update(scene_t* scene)
 	TRACY_ZONE_BEGIN
 
 	std_ecs_query(&scene->ecs, &s_scene_stack_controller_query);
-	std_ecs_for(&scene->ecs, &s_scene_stack_controller_query, scene_update_controller_proc);
+	std_ecs_for(&scene->ecs, &s_scene_stack_controller_query);
 
 	TRACY_ZONE_END
 }
@@ -110,7 +114,7 @@ uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_
 	uint64_t root_entity = std_ecs_create(&scene->ecs);
 
 	transform_t* root_transform = (transform_t*)std_ecs_attach(&scene->ecs, root_entity, VEGA_COMPONENT_TYPE_TRANSFORM, 0);
-	transform_identity(root_transform, 0);
+	transform_init(root_transform, 0);
 
 	model_asset_t* model_asset = (model_asset_t*)std_map_get(&g_asset_loader_models, asset_name, strlen(asset_name), 0);
 
@@ -126,11 +130,12 @@ uint64_t scene_create_entity_from_model_asset(scene_t* scene, char const* asset_
 		uint64_t mesh_entity = std_ecs_create(&scene->ecs); // TODO: make parent-child relationship..
 
 		transform_t* mesh_transform = (transform_t*)std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_TRANSFORM, 0);
-		transform_identity(mesh_transform, root_transform);
+		transform_init(mesh_transform, root_transform);
 
 		renderable_t* mesh_renderable = (renderable_t*)std_ecs_attach(&scene->ecs, mesh_entity, VEGA_COMPONENT_TYPE_RENDERABLE, 0);
-		mesh_renderable->mesh_asset = mesh_asset;
-		mesh_renderable->material_asset = material_asset;
+		renderable_init(mesh_renderable);
+		mesh_renderable->mesh_asset = mesh_asset; // TODO: setter..
+		mesh_renderable->material_asset = material_asset; // TODO: setter..
 
 		mesh_ref_index++;
 	}

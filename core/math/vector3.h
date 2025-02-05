@@ -404,7 +404,16 @@ __forceinline vector3_t math_vector3_div_scalar(vector3_t a, double b)
 }
 __forceinline vector3_t math_vector3_norm(vector3_t a)
 {
-	return math_vector3_mul_scalar(a, 1.0 / math_vector3_length(a));
+	double l = math_vector3_length(a);
+
+	if (l > 0.0)
+	{
+		return math_vector3_mul_scalar(a, 1.0 / l);
+	}
+	else
+	{
+		return math_vector3_zero();
+	}
 }
 __forceinline vector3_t math_vector3_cross(vector3_t a, vector3_t b)
 {
@@ -462,27 +471,23 @@ __forceinline vector3_t math_vector3_cross(vector3_t a, vector3_t b)
 }
 __forceinline vector3_t math_vector3_rotate(vector3_t a, quaternion_t b)
 {
-	// TODO: vectorize this function..
+	double xx = b.x * b.x;
+	double yy = b.y * b.y;
+	double zz = b.z * b.z;
 
-	double bx2 = b.x * 2.0;
-	double by2 = b.y * 2.0;
-	double bz2 = b.z * 2.0;
+	double xy = b.x * b.y;
+	double xz = b.x * b.z;
+	double yz = b.y * b.z;
 
-	double xx = b.x * bx2;
-	double yy = b.y * by2;
-	double zz = b.z * bz2;
-	double xy = b.x * by2;
-	double xz = b.x * bz2;
-	double yz = b.y * bz2;
-	double wx = b.w * bx2;
-	double wy = b.w * by2;
-	double wz = b.w * bz2;
+	double wx = b.w * b.x;
+	double wy = b.w * b.y;
+	double wz = b.w * b.z;
 
 	vector3_t r =
 	{
-		.x = (1.0 - (yy + zz)) * a.x +        (xy - wz)  * a.y +        (xz + wy)  * a.z,
-		.y =        (xy + wz)  * a.x + (1.0 - (xx + zz)) * a.y +        (yz - wx)  * a.z,
-		.z =        (xz - wy)  * a.x +        (yz + wx)  * a.y + (1.0 - (xx + yy)) * a.z,
+		.x = (1.0 - 2.0 * (yy + zz)) * a.x +        2.0 * (xy - wz)  * a.y +        2.0 * (xz + wy)  * a.z,
+		.y =        2.0 * (xy + wz)  * a.x + (1.0 - 2.0 * (xx + zz)) * a.y +        2.0 * (yz - wx)  * a.z,
+		.z =        2.0 * (xz - wy)  * a.x +        2.0 * (yz + wx)  * a.y + (1.0 - 2.0 * (xx + yy)) * a.z,
 	};
 
 	return r;

@@ -11,36 +11,6 @@
 key_state_t g_platform_event_keyboard_key_states[0xFF] = { 0 };
 key_state_t g_platform_event_mouse_key_states[0x3] = { 0 };
 
-void platform_event_update_key_states(void)
-{
-	TRACY_ZONE_BEGIN
-
-	for (uint8_t key_index = 0; key_index < 0xFF; key_index++)
-	{
-		if (g_platform_event_keyboard_key_states[key_index] == KEY_STATE_PRESSED)
-		{
-			g_platform_event_keyboard_key_states[key_index] = KEY_STATE_DOWN;
-		}
-		else if (g_platform_event_keyboard_key_states[key_index] == KEY_STATE_RELEASED)
-		{
-			g_platform_event_keyboard_key_states[key_index] = KEY_STATE_UP;
-		}
-	}
-
-	for (uint8_t key_index = 0; key_index < 0x3; key_index++)
-	{
-		if (g_platform_event_mouse_key_states[key_index] == KEY_STATE_PRESSED)
-		{
-			g_platform_event_mouse_key_states[key_index] = KEY_STATE_DOWN;
-		}
-		else if (g_platform_event_mouse_key_states[key_index] == KEY_STATE_RELEASED)
-		{
-			g_platform_event_mouse_key_states[key_index] = KEY_STATE_UP;
-		}
-	}
-
-	TRACY_ZONE_END
-}
 uint8_t platform_event_is_keyboard_key_pressed(keyboard_key_t key)
 {
 	TRACY_ZONE_BEGIN

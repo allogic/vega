@@ -31,6 +31,12 @@ typedef struct _camera_t
 	double far_z;
 } camera_t;
 
+///////////////////////////////////////////////////////////////
+// Public API
+///////////////////////////////////////////////////////////////
+
+void camera_init(camera_t* camera);
+
 VEGA_EXTERN_C_END
 
 #endif // VEGA_ENGINE_COMPONENT_CAMERA_H
